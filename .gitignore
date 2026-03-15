@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Test files
+*.class
+*.jar
+*.png
+*.bin
+*.mw
+*.ipynb
+*.txt
+test_*
+extracted_*
+tmp_*
+ahk_test.ahk
+
+# Java decompile artifacts
+com/
+META-INF/
+DecodeImage.java
+TestDecode.java
+cfr.jar
+
+# Bridge state
+.bridge/
+
+# IDE
+.claude/
+ws_extracted/
