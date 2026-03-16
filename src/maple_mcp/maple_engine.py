@@ -200,29 +200,35 @@ class MapleEngine:
 
                 unit_ts = self._build_compound_unit_ts(unit_inner, UNIT_DISPLAY)
 
-                r1 = self.execute(
+                r1 = self._execute_clean(
                     f'local ts, unit_ts;'
-                    f'ts := Typesetting:-Typeset({base_expr}):'
+                    f'ts := InertForm:-Typeset(InertForm:-Parse("{base_expr}"), inert=false):'
+                    f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):'
+                    f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):'
                     f'unit_ts := {unit_ts}:'
                     f'ts := Typesetting:-mrow(op(ts), '
                     f'Typesetting:-mo("&InvisibleTimes;"), unit_ts):'
                     f'DocumentTools:-Layout:-Equation(ts, style=TwoDimInput, executable=false)'
                 )
             else:
-                r1 = self.execute(
+                r1 = self._execute_clean(
                     f'DocumentTools:-Layout:-Equation({expr}, style=TwoDimInput, executable=false)'
                 )
         else:
-            # InertForm: parse without evaluating, typeset without gray styling
-            # Strip mcomplete/_Hold wrappers - only keep the clean Typesetting tree
-            r1 = self.execute(
-                f'local ts;'
-                f'ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false):'
-                f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):'
-                f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):'
-                f'DocumentTools:-Layout:-Equation(ts,'
-                f' style=TwoDimInput, executable=false)'
+            # InertForm in CLEAN subprocess (no user variables)
+            raw = self._execute_clean(
+                f'local ts;\n'
+                f'ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false):\n'
+                f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
+                f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
+                f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
+                f' style=TwoDimInput, executable=false)));\n'
             )
+            # Extract base64 from clean output
+            lines = [l for l in raw.split('\n') if l and l != 'ts']
+            content_b64 = ''.join(lines).strip()
+            display_b64 = content_b64
+            return display_b64, content_b64
 
         match1 = re.findall(r'"([A-Za-z0-9+/=]{4,})"', r1)
         content_b64 = match1[-1] if match1 else ""
@@ -324,6 +330,24 @@ class MapleEngine:
             f'Typesetting:-msemantics = "Unit",'
             f'open = "&lobrk;", close = "&robrk;")'
         )
+
+    @staticmethod
+    def _execute_clean(statement: str) -> str:
+        """Execute a Maple statement in a clean subprocess (no user variables)."""
+        import subprocess
+        cmaple = os.path.join(MAPLE_ROOT, "bin.X86_64_WINDOWS", "cmaple.exe")
+        try:
+            result = subprocess.run(
+                [cmaple, "-q"],
+                input=statement + "\nquit;\n",
+                capture_output=True, text=True, timeout=15
+            )
+            # Clean output: join lines, strip whitespace
+            lines = [l.strip() for l in result.stdout.strip().split('\n')
+                     if l.strip() and not l.strip().startswith('>')]
+            return "\n".join(lines)
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return ""
 
     _ts2str_defined = False
 
