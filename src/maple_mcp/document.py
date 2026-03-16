@@ -55,9 +55,84 @@ def _replace_units_in_expr(expr: str) -> str:
     return re.sub(r'\[\[(.+?)\]\]', _replace, expr)
 
 
-def _equation_xml(expr: str, executable: bool = True, style: str = "2D Math") -> str:
+def _latex_to_maple(expr: str) -> str:
+    """Convert common LaTeX patterns to Maple syntax."""
+    import re
+    # Detect LaTeX and convert
+    if '\\' in expr:
+        expr = expr.replace('\\cdot', '*')
+        expr = expr.replace('\\times', '*')
+        expr = expr.replace('\\,', '')
+        expr = expr.replace('\\;', '')
+        expr = expr.replace('\\left', '')
+        expr = expr.replace('\\right', '')
+        # Handle \frac with possibly nested braces
+        while '\\frac{' in expr:
+            idx = expr.find('\\frac{')
+            # Find matching braces for numerator
+            depth = 0
+            start = idx + 6  # after \frac{
+            end = start
+            for j in range(start, len(expr)):
+                if expr[j] == '{': depth += 1
+                elif expr[j] == '}':
+                    if depth == 0:
+                        end = j
+                        break
+                    depth -= 1
+            num = expr[start:end]
+            # Find matching braces for denominator
+            start2 = end + 2  # skip }{
+            depth = 0
+            end2 = start2
+            for j in range(start2, len(expr)):
+                if expr[j] == '{': depth += 1
+                elif expr[j] == '}':
+                    if depth == 0:
+                        end2 = j
+                        break
+                    depth -= 1
+            den = expr[start2:end2]
+            expr = expr[:idx] + f'({num})/({den})' + expr[end2+1:]
+        expr = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', expr)
+        expr = re.sub(r'\\int_\{([^}]+)\}\^\{([^}]+)\}', r'Int(', expr)
+        expr = expr.replace('\\int', 'int')
+        expr = expr.replace('\\pi', 'Pi')
+        expr = expr.replace('\\infty', 'infinity')
+        expr = expr.replace('\\alpha', 'alpha')
+        expr = expr.replace('\\beta', 'beta')
+        expr = expr.replace('\\gamma', 'gamma')
+        expr = expr.replace('\\delta', 'delta')
+        expr = expr.replace('\\theta', 'theta')
+        expr = expr.replace('\\omega', 'omega')
+        expr = expr.replace('\\Omega', 'Omega')
+        expr = expr.replace('\\sum', 'sum')
+        expr = expr.replace('\\prod', 'product')
+        expr = expr.replace('\\ln', 'ln')
+        expr = expr.replace('\\log', 'log')
+        expr = expr.replace('\\sin', 'sin')
+        expr = expr.replace('\\cos', 'cos')
+        expr = expr.replace('\\tan', 'tan')
+        expr = expr.replace('\\exp', 'exp')
+        expr = expr.replace('\\lim', 'limit')
+        # Clean up remaining backslashes
+        expr = expr.replace('\\', '')
+    return expr
+
+
+def _equation_xml(expr: str, executable: bool = True, style: str = "2D Math",
+                   background: str | None = None) -> str:
+    expr = _latex_to_maple(expr)
     expr = _replace_units_in_expr(expr)
-    display_b64, content_b64 = engine.encode_equation(expr)
+    try:
+        display_b64, content_b64 = engine.encode_equation(
+            expr, background=background)
+        if not content_b64:
+            raise ValueError("Empty encoding")
+    except Exception:
+        from xml.sax.saxutils import escape
+        return escape(expr)
+
     exe = "true" if executable else "false"
     return (
         f'<Equation executable="{exe}" style="{style}" '
@@ -67,7 +142,7 @@ def _equation_xml(expr: str, executable: bool = True, style: str = "2D Math") ->
 
 
 def _font_xml(text: str, bold=False, italic=False, underline=False,
-               color=None, size=None) -> str:
+               color=None, size=None, raw=False) -> str:
     attrs = []
     if bold:
         attrs.append('bold="true"')
@@ -76,12 +151,15 @@ def _font_xml(text: str, bold=False, italic=False, underline=False,
     if underline:
         attrs.append('underline="true"')
     if color:
-        attrs.append(f'foreground="{color}"')
+        attrs.append(f'background="{color}"')
+        attrs.append('opaque="true"')
     if size:
         attrs.append(f'size="{size}"')
-    from xml.sax.saxutils import escape
+    if not raw:
+        from xml.sax.saxutils import escape
+        text = escape(text)
     attr_str = " ".join(attrs)
-    return f'<Font {attr_str}>{escape(text)}</Font>'
+    return f'<Font {attr_str}>{text}</Font>'
 
 
 UNIT_MAP = {
@@ -102,11 +180,6 @@ UNIT_MAP = {
 }
 
 
-COLOR_MAP = {
-    "red": "[255,0,0]", "blue": "[0,0,255]", "green": "[0,128,0]",
-    "orange": "[255,165,0]", "purple": "[128,0,128]", "gray": "[128,128,128]",
-    "black": "[0,0,0]", "white": "[255,255,255]",
-}
 
 
 def _parse_markup(text: str) -> str:
@@ -126,27 +199,47 @@ def _parse_markup(text: str) -> str:
     import re
     from xml.sax.saxutils import escape
 
-    def _replace_display(m):
-        return _equation_xml(m.group(1), executable=False)
+    _active_bg = [None]
+    _placeholders = {}
+    _ph_counter = [0]
 
-    def _replace_exec(m):
-        return _equation_xml(m.group(1), executable=True)
+    def _protect(m, executable=False):
+        """Replace equation markup with placeholder to protect from formatting."""
+        key = f"\x00EQ{_ph_counter[0]}\x00"
+        _ph_counter[0] += 1
+        _placeholders[key] = (m.group(1), executable)
+        return key
 
+    def _restore_equations(text):
+        """Replace placeholders with actual equation XML."""
+        for key, (expr, exe) in _placeholders.items():
+            eq_xml = _equation_xml(expr, executable=exe, background=_active_bg[0])
+            text = text.replace(key, eq_xml)
+        return text
+
+    # Step 1: Protect equations with placeholders (so * inside isn't treated as italic)
+    result = re.sub(r'\{\{(.+?)\}\}', lambda m: _protect(m, False), text)
+    result = re.sub(r'\{!(.+?)!\}', lambda m: _protect(m, True), result)
+    result = re.sub(r'\{=(.+?)=\}', lambda m: _protect(m, True), result)
+
+    # Step 2: Process formatting (safe now - equations are placeholders)
     def _replace_color(m):
-        color_name = m.group(1).lower()
-        color_val = COLOR_MAP.get(color_name, f"[{color_name}]")
-        return _font_xml(m.group(2), color=color_val)
+        rgb = m.group(1)
+        color_val = f"[{rgb}]"
+        _active_bg[0] = color_val
+        inner = _restore_equations(m.group(2))
+        inner = re.sub(r'\*\*(.+?)\*\*', lambda m2: _font_xml(m2.group(1), bold=True, raw=True), inner)
+        _active_bg[0] = None
+        return _font_xml(inner, color=color_val, raw=True)
 
-    # Equations first (before escaping)
-    result = re.sub(r'\{\{(.+?)\}\}', _replace_display, text)
-    result = re.sub(r'\{!(.+?)!\}', _replace_exec, result)
-    result = re.sub(r'\{=(.+?)=\}', _replace_exec, result)
+    result = re.sub(r'\{color:([0-9,]+)\}(.+?)\{/color\}', _replace_color, result)
+    result = re.sub(r'\*\*(.+?)\*\*', lambda m: _font_xml(m.group(1), bold=True, raw=True), result)
+    result = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', lambda m: _font_xml(m.group(1), italic=True, raw=True), result)
+    result = re.sub(r'__(.+?)__', lambda m: _font_xml(m.group(1), underline=True, raw=True), result)
 
-    # Text formatting
-    result = re.sub(r'\*\*(.+?)\*\*', lambda m: _font_xml(m.group(1), bold=True), result)
-    result = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', lambda m: _font_xml(m.group(1), italic=True), result)
-    result = re.sub(r'__(.+?)__', lambda m: _font_xml(m.group(1), underline=True), result)
-    result = re.sub(r'\{color:(\w+)\}(.+?)\{/color\}', _replace_color, result)
+    # Step 3: Restore remaining equations (outside color blocks)
+    _active_bg[0] = None
+    result = _restore_equations(result)
 
     return result
 
@@ -162,10 +255,20 @@ def _has_any_markup(text: str) -> bool:
             or re.search(r'(?<!\*)\*(?!\*).+?(?<!\*)\*(?!\*)', text) is not None)
 
 
+def _extract_color_from_text(text: str) -> str | None:
+    """Extract RGB color if entire text is wrapped in {color:R,G,B}...{/color}."""
+    import re
+    m = re.match(r'^\{color:([0-9,]+)\}.*\{/color\}$', text)
+    return f"[{m.group(1)}]" if m else None
+
+
 def _make_text_block(text: str, label_num: int, align: str = "left") -> str:
     inline_output = _has_exec_inline(text)
     attribs = _group_attribs(label_num, inline_output=inline_output)
     attrs_str = " ".join(f'{k}="{v}"' for k, v in attribs.items())
+
+    # Check if entire block has a background color
+    bg_color = _extract_color_from_text(text)
 
     if _has_any_markup(text):
         inner = _parse_markup(text)
@@ -175,10 +278,15 @@ def _make_text_block(text: str, label_num: int, align: str = "left") -> str:
 
     alignment = {"left": "left", "center": "centred", "right": "right"}.get(align, "left")
 
+    # Add background to Text-field itself (like Maple does for highlighted text)
+    tf_attrs = f'style="Text" layout="Normal" alignment="{alignment}"'
+    if bg_color:
+        tf_attrs += f' opaque="true" background="{bg_color}"'
+
     return (
         f'<Presentation-Block>'
         f'<Group {attrs_str}>'
-        f'<Input><Text-field style="Text" layout="Normal" alignment="{alignment}">'
+        f'<Input><Text-field {tf_attrs}>'
         f'{inner}'
         f'</Text-field></Input>'
         f'</Group></Presentation-Block>'
@@ -269,6 +377,14 @@ def _block_to_xml(block) -> str:
     return ET.tostring(block, encoding="unicode")
 
 
+def _backup(file_path: str):
+    """Create a backup before destructive operations."""
+    path = Path(file_path)
+    backup = path.with_suffix(".mw.bak")
+    import shutil
+    shutil.copy2(path, backup)
+
+
 def _append_blocks(file_path: str, blocks) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
@@ -295,50 +411,75 @@ def _decode_equation_text(eq_el: ET.Element) -> str:
         return "[math]"
 
 
-HTML_ENTITIES = {
-    "&sdot;": "·", "&times;": "×", "&minus;": "−",
-    "&DoubleLeftRightArrow;": "⇔", "&LeftRightArrow;": "↔",
-    "&RightArrow;": "→", "&LeftArrow;": "←",
-    "&GreaterEqual;": "≥", "&LessEqual;": "≤",
-    "&deg;": "°", "&ohm;": "Ω", "&Omega;": "Ω",
-    "&alpha;": "α", "&beta;": "β", "&gamma;": "γ",
-    "&delta;": "δ", "&Delta;": "Δ", "&epsilon;": "ε",
-    "&theta;": "θ", "&lambda;": "λ", "&mu;": "μ",
-    "&pi;": "π", "&rho;": "ρ", "&sigma;": "σ",
-    "&tau;": "τ", "&phi;": "φ", "&omega;": "ω",
-    "&eta;": "η", "&nu;": "ν",
-    "&in;": "∈", "&notin;": "∉",
-    "&infin;": "∞", "&plusmn;": "±",
-    "&sum;": "∑", "&prod;": "∏", "&int;": "∫",
-    "&sqrt;": "√", "&ne;": "≠", "&approx;": "≈",
-}
-
-
 def _decode_entities(text: str) -> str:
-    import re
-    for entity, char in HTML_ENTITIES.items():
-        text = text.replace(entity, char)
-    text = re.sub(r'&#(\d+);', lambda m: chr(int(m.group(1))), text)
-    text = re.sub(r'&#x([0-9a-fA-F]+);', lambda m: chr(int(m.group(1), 16)), text)
+    import html
+    # Maple custom entities (not in HTML standard)
+    text = text.replace('&uminus0;', '-')
+    text = text.replace('&it;', '*')
+    text = html.unescape(text)
+    # Remove invisible Unicode characters
+    text = text.replace('\u2061', '')   # ApplyFunction
+    text = text.replace('\u2062', '*')  # InvisibleTimes → *
+    text = text.replace('\u2146', '')   # DifferentialD
+    text = text.replace('\u2145', '')   # DoubleStruckCapitalD
     return text
 
 
 def _extract_text(el: ET.Element) -> str:
     parts = []
-    if el.text:
-        parts.append(el.text.strip())
-    for child in el:
-        if child.tag == "Equation":
-            ie = child.get("input-equation", "")
-            if ie:
-                parts.append(ie)
-            else:
-                parts.append(_decode_equation_text(child))
-        elif child.tag == "Font":
-            if child.text:
-                parts.append(child.text.strip())
-        if child.tail:
-            parts.append(child.tail.strip())
+
+    def _process_children(element):
+        if element.text:
+            parts.append(element.text.strip())
+        for child in element:
+            if child.tag == "Equation":
+                exe = child.get("executable", "false") == "true"
+                decoded = _decode_equation_text(child)
+                # Check if equation has highlight baked into Typesetting
+                eq_bg = getattr(engine, '_last_eq_background', None)
+                if decoded and decoded != "[math]":
+                    if exe:
+                        eq_markup = f"{{!{decoded}!}}"
+                    else:
+                        eq_markup = f"{{{{{decoded}}}}}"
+                    if eq_bg:
+                        eq_markup = f"{{color:{eq_bg}}}{eq_markup}{{/color}}"
+                    parts.append(eq_markup)
+                else:
+                    parts.append("[math]")
+            elif child.tag == "Font":
+                bold = child.get("bold") == "true"
+                italic = child.get("italic") == "true"
+                underline = child.get("underline") == "true"
+                has_bg = child.get("opaque") == "true" and child.get("background")
+                bg_color = child.get("background", "")
+
+                # Collect inner content (may contain nested Font/Equation)
+                inner_parts = []
+                old_parts = list(parts)
+                parts.clear()
+                _process_children(child)
+                inner_text = " ".join(p for p in parts if p)
+                parts.clear()
+                parts.extend(old_parts)
+
+                if inner_text:
+                    if bold:
+                        inner_text = f"**{inner_text}**"
+                    if italic:
+                        inner_text = f"*{inner_text}*"
+                    if underline:
+                        inner_text = f"__{inner_text}__"
+                    if has_bg:
+                        rgb = bg_color.strip("[]")
+                        inner_text = f"{{color:{rgb}}}{inner_text}{{/color}}"
+                    parts.append(inner_text)
+            elif child.tag == "Image":
+                pass  # Images handled separately
+            if child.tail:
+                parts.append(child.tail.strip())
+
+    _process_children(el)
     text = " ".join(p for p in parts if p)
     return _decode_entities(_decode_maple_text(text))
 
@@ -363,10 +504,18 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
         outputs = []
         images = []
         group_style = None
+        group_align = None
 
         for tf in group.iter("Text-field"):
             style = tf.get("style", "")
             content = _extract_text(tf)
+
+            # Track alignment
+            align = tf.get("alignment", "")
+            if align == "centred":
+                group_align = "center"
+            elif align == "right":
+                group_align = "right"
 
             for img_el in tf.iter("Image"):
                 w = img_el.get("width", "0")
@@ -421,30 +570,33 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                 entry = {"type": "text", "content": " ".join(texts)}
                 if outputs:
                     entry["output"] = outputs
+                if group_align:
+                    entry["align"] = group_align
                 entries.append(entry)
 
     block_idx = [0]
     eff_end = end if end is not None else float("inf")
+    nesting_depth = [0]
 
     def _walk(parent: ET.Element):
         for child in parent:
             if child.tag == "Section":
+                nesting_depth[0] += 1
                 if start <= block_idx[0] < eff_end:
                     for title_el in child.iter("Title"):
                         for tf in title_el.iter("Text-field"):
                             content = _extract_text(tf)
                             if content:
-                                style = tf.get("style", "")
-                                level = int(style[-1]) if style.startswith("Heading") else 1
                                 entries.append({
                                     "block": block_idx[0],
                                     "type": "section",
                                     "content": content,
-                                    "level": level,
+                                    "level": nesting_depth[0],
                                 })
                         break
                 block_idx[0] += 1
                 _walk(child)
+                nesting_depth[0] -= 1
             elif child.tag == "Presentation-Block":
                 if start <= block_idx[0] < eff_end:
                     pre_len = len(entries)
@@ -464,9 +616,15 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                     for entry in entries[pre_len:]:
                         if "block" not in entry:
                             entry["block"] = block_idx[0]
+                        entry["depth"] = nesting_depth[0]
                 block_idx[0] += 1
 
     _walk(root)
+
+    # Strip trailing empty/[math] blocks
+    while entries and entries[-1].get("content") in ("[math]", "", None):
+        entries.pop()
+
     return entries if entries else []
 
 
@@ -548,23 +706,34 @@ def _decode_maple_text(text: str) -> str:
 
 
 def _get_block_text(content: str, block: dict) -> str:
-    """Extract decoded text from a raw XML block for matching."""
+    """Extract decoded text from a raw XML block for matching.
+
+    Uses the same _extract_text as read_document so match strings
+    correspond exactly to what the LLM sees in read output.
+    """
     raw = content[block["start"]:block["end"]]
     try:
         el = ET.fromstring(raw)
     except ET.ParseError:
         return raw[:200]
 
+    if block["tag"] == "section":
+        # Sections: return "## title" with depth prefix (matches read_document format)
+        # +1 to include the section's own <Section> tag in the count
+        depth = _count_section_depth(content, block["start"] + len("<Section "))
+        for title in el.iter("Title"):
+            for tf in title.iter("Text-field"):
+                title_text = _extract_text(tf)
+                return f"{'#' * depth} {title_text}"
+        return ""
+
+    # PB blocks: extract from non-output Text-fields
     parts = []
     for tf in el.iter("Text-field"):
         style = tf.get("style", "")
         if "Output" in style:
             continue
         parts.append(_extract_text(tf))
-
-    for title in el.iter("Title"):
-        for tf in title.iter("Text-field"):
-            parts.append(_extract_text(tf))
 
     return " ".join(p for p in parts if p)
 
@@ -626,12 +795,59 @@ def _find_matching_block(
     return candidates[occurrence - 1]
 
 
+def _count_section_depth(content: str, position: int) -> int:
+    """Count how many <Section> elements contain this position."""
+    depth = 0
+    i = 0
+    while i < position:
+        sec_open = content.find("<Section ", i)
+        sec_close = content.find("</Section>", i)
+
+        if sec_open == -1 and sec_close == -1:
+            break
+
+        # Take whichever comes first
+        if sec_open != -1 and (sec_close == -1 or sec_open < sec_close):
+            if sec_open < position:
+                depth += 1
+                i = sec_open + len("<Section ")
+            else:
+                break
+        else:
+            if sec_close < position:
+                depth -= 1
+                i = sec_close + len("</Section>")
+            else:
+                break
+
+    return max(0, depth)
+
+
+def _validate_heading_depth(content: str, position: int, items: list[dict]):
+    """Validate that heading levels match the insertion depth."""
+    depth = _count_section_depth(content, position)
+    for item in items:
+        if item.get("type") == "heading":
+            expected_level = depth + 1
+            actual_level = item.get("level", 1)
+            if actual_level != expected_level:
+                raise ValueError(
+                    f"Heading level mismatch: inserting level {actual_level} "
+                    f"heading but insertion point is at depth {depth} "
+                    f"(expected level {expected_level}). "
+                    f"This would create wrong nesting in the document."
+                )
+
+
 def insert_after(file_path: str, match: str, items: list[dict],
                  section: str | None = None, occurrence: int | None = None) -> str:
+    _backup(file_path)
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
+
+    _validate_heading_depth(content, block["end"], items)
 
     root = ET.parse(file_path).getroot()
     label = _next_label_num(root)
@@ -645,10 +861,13 @@ def insert_after(file_path: str, match: str, items: list[dict],
 
 def insert_before(file_path: str, match: str, items: list[dict],
                   section: str | None = None, occurrence: int | None = None) -> str:
+    _backup(file_path)
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
+
+    _validate_heading_depth(content, block["start"], items)
 
     root = ET.parse(file_path).getroot()
     label = _next_label_num(root)
@@ -667,6 +886,18 @@ def replace_block(file_path: str, match: str, items: list[dict],
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
 
+    if block["tag"] == "section":
+        child_count = sum(1 for b in blocks
+                         if b["start"] > block["start"] and b["end"] <= block["end"]
+                         and b is not block)
+        if child_count > 0:
+            block_text = _get_block_text(content, block)[:80]
+            raise ValueError(
+                f"Matched a SECTION: '{block_text}' with {child_count} child blocks. "
+                f"Replacing would destroy all content. Match a specific block inside instead."
+            )
+
+    _backup(file_path)
     root = ET.parse(file_path).getroot()
     label = _next_label_num(root)
     new_blocks, _, _ = _build_nested(items, 0, label)
@@ -678,12 +909,26 @@ def replace_block(file_path: str, match: str, items: list[dict],
 
 
 def delete_block(file_path: str, match: str,
-                 section: str | None = None, occurrence: int | None = None) -> str:
+                 section: str | None = None, occurrence: int | None = None,
+                 delete_section: bool = False) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
 
+    if block["tag"] == "section" and not delete_section:
+        # Count child blocks
+        child_count = sum(1 for b in blocks
+                         if b["start"] > block["start"] and b["end"] <= block["end"]
+                         and b is not block)
+        block_text = _get_block_text(content, block)[:80]
+        raise ValueError(
+            f"Matched a SECTION: '{block_text}' containing {child_count} child blocks. "
+            f"This would delete the entire section and all its content. "
+            f"Set delete_section=True if this is intended, or use a more specific match."
+        )
+
+    _backup(file_path)
     content = content[:block["start"]] + content[block["end"]:]
     path.write_text(content, encoding="utf-8")
     return str(path)
@@ -752,6 +997,7 @@ def _build_nested(items: list[dict], start: int, label_start: int,
 
 
 def insert_content(file_path: str, items: list[dict]) -> str:
+    _backup(file_path)
     root = ET.parse(file_path).getroot()
     label = _next_label_num(root)
     blocks, _, _ = _build_nested(items, 0, label)

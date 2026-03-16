@@ -175,7 +175,7 @@ class MapleEngine:
 
         return "(no output)"
 
-    def encode_equation(self, expr: str) -> tuple[str, str]:
+    def encode_equation(self, expr: str, background: str | None = None) -> tuple[str, str]:
         import re
 
         expr = expr.strip().rstrip(";:")
@@ -213,25 +213,57 @@ class MapleEngine:
                     f'DocumentTools:-Layout:-Equation({expr}, style=TwoDimInput, executable=false)'
                 )
         else:
+            # InertForm: parse without evaluating, typeset without gray styling
+            # Strip mcomplete/_Hold wrappers - only keep the clean Typesetting tree
             r1 = self.execute(
-                f'DocumentTools:-Layout:-Equation({expr}, style=TwoDimInput, executable=true)'
+                f'local ts;'
+                f'ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false):'
+                f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):'
+                f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):'
+                f'DocumentTools:-Layout:-Equation(ts,'
+                f' style=TwoDimInput, executable=false)'
             )
 
         match1 = re.findall(r'"([A-Za-z0-9+/=]{4,})"', r1)
         content_b64 = match1[-1] if match1 else ""
 
-        # For units: display = content (same Typesetting, like the facit)
-        # For non-units: display = Typesetting form
-        if has_units:
-            display_b64 = content_b64
-        else:
-            r2 = self.execute(
-                f'DocumentTools:-Layout:-Equation(Typesetting:-Typeset({expr}),'
-                f' style=TwoDimInput, executable=true)'
-            )
-            match2 = re.findall(r'"([A-Za-z0-9+/=]{4,})"', r2)
-            display_b64 = match2[-1] if match2 else ""
+        # Inject background color into Typesetting elements
+        if background and content_b64:
+            import base64
+            raw = base64.b64decode(content_b64).decode('latin-1')
+            # Add background and opaque to all mi, mn, mo elements
+            for tag in ['mi', 'mn', 'mo']:
+                maple_tag = f'I#{tag}G'
+                raw = raw.replace(maple_tag,
+                    f'I#{tag}G')  # keep tag, we'll add via subs in Maple
+            # Use Maple to inject background attributes
+            import tempfile, os
+            tmp = os.path.join(os.environ.get("TEMP", "/tmp"), "maple_bg.m")
+            with open(tmp, 'wb') as f:
+                f.write(raw.encode('latin-1'))
+            tmp_fwd = tmp.replace(chr(92), '/')
 
+            r_bg = self.execute(
+                f'local ts, bg_ts;'
+                f'ts := op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m")):'
+                f'bg_ts := subsindets(ts, specfunc(Typesetting:-mi), '
+                f'  proc(x) Typesetting:-mi(op(x), background="{background}", opaque="true") end proc):'
+                f'bg_ts := subsindets(bg_ts, specfunc(Typesetting:-mn), '
+                f'  proc(x) Typesetting:-mn(op(x), background="{background}", opaque="true") end proc):'
+                f'bg_ts := subsindets(bg_ts, specfunc(Typesetting:-mo), '
+                f'  proc(x) Typesetting:-mo(op(x), background="{background}", opaque="true") end proc):'
+                f'DocumentTools:-Layout:-Equation(bg_ts, style=TwoDimInput, executable=false)'
+            )
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+
+            match_bg = re.findall(r'"([A-Za-z0-9+/=]{4,})"', r_bg)
+            if match_bg:
+                content_b64 = match_bg[-1]
+
+        display_b64 = content_b64
         return display_b64, content_b64
 
     def _build_compound_unit_ts(self, unit_inner: str, display_map: dict) -> str:
@@ -293,7 +325,7 @@ class MapleEngine:
             f'open = "&lobrk;", close = "&robrk;")'
         )
 
-    _ts2str_defined = False
+    _ts2str_defined = False  # Set to False to force redefine after code changes
 
     def _ensure_ts2str(self):
         if MapleEngine._ts2str_defined:
@@ -309,7 +341,9 @@ TS2Str := proc(e)
     if not type(e, function) then return "" end if;
     t := op(0, e);
     s := "";
-    if t = Typesetting:-mfrac then
+    if t = Typesetting:-mcomplete then
+        s := procname(op(1, e))
+    elif t = Typesetting:-mfrac then
         s := cat("(", procname(op(1,e)), ")/(", procname(op(2,e)), ")")
     elif t = Typesetting:-msup then
         s := cat(procname(op(1,e)), "^", procname(op(2,e)))
@@ -354,15 +388,27 @@ end proc:
         except OSError:
             pass
 
+        import html
         result = result.strip('"')
-        for old, new in [
-            ("&uminus0;", "-"), ("&minus;", "-"),
-            ("&GreaterEqual;", ">="), ("&LessEqual;", "<="),
-            ("&#8477;", "R"), ("&in;", " in "),
-            ("&it;", "*"), ("&InvisibleTimes;", "*"),
-            ("  ", " "),
-        ]:
-            result = result.replace(old, new)
+        # Maple custom entities (not in HTML standard)
+        result = result.replace('&uminus0;', '-')
+        result = result.replace('&it;', '*')
+        result = html.unescape(result)
+        # Remove invisible Unicode characters
+        result = result.replace('\u2061', '')   # ApplyFunction
+        result = result.replace('\u2062', '*')  # InvisibleTimes → *
+        result = result.replace('\u2146', '')   # DifferentialD
+        result = result.replace('\u2145', '')   # DoubleStruckCapitalD
+        result = result.replace('  ', ' ')
+
+        # Detect highlight color in the raw Typesetting data
+        self._last_eq_background = None
+        if b'background' in decoded:
+            import re as _re
+            bg_match = _re.search(r'background.*?\[(\d+,\d+,\d+)\]', decoded.decode('ascii', errors='replace'))
+            if bg_match:
+                self._last_eq_background = bg_match.group(1)
+
         return result.strip()
 
     def get_help(self, topic: str) -> str:
