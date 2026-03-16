@@ -203,8 +203,15 @@ def insert_after(match: str, items: list[dict],
       {color:R,G,B}text{/color}  - highlight background
       [[unit]]  - Maple unit in equations
 
-    IMPORTANT: Use MAPLE syntax in equations, NOT LaTeX!
-    Equations are NOT evaluated, they display exactly what you write.
+    IMPORTANT RULES:
+    - Use MAPLE syntax in equations, NOT LaTeX!
+    - ALL math must use {{}} — never write math as plain text.
+      WRONG: "x^2 - 5*x + 6 = 0"
+      RIGHT: "{{x^2 - 5*x + 6 = 0}}"
+    - Equations are NOT evaluated, they display exactly what you write.
+    - **bold** markers must always be balanced (opening AND closing).
+    - Keep {color:R,G,B} blocks simple — one block per answer line,
+      not many fragments.
     CRITICAL: Each {{}} must contain at most ONE = sign.
     {{a = b = c}} WILL FAIL and show as raw text.
     WRONG: {{x = Pi - Pi/6 = 5*Pi/6}}
