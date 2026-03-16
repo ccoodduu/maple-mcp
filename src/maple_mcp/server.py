@@ -69,6 +69,8 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
             text_lines.append(f"{section_indent}{'#' * level} {entry.get('content', '')}")
         elif t == "title":
             text_lines.append(f"TITLE: {entry.get('content', '')}")
+        elif t == "empty":
+            text_lines.append("")
         else:
             content = entry.get("content", "")
             if isinstance(content, list):

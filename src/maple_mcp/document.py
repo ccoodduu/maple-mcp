@@ -597,6 +597,9 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                                 parts.append(c)
                         del entries[pre_len:]
                         entries.append({"type": "text", "content": " ".join(parts)})
+                    # If no entries produced, it's an empty line
+                    if len(entries) == pre_len:
+                        entries.append({"type": "empty"})
                     for entry in entries[pre_len:]:
                         if "block" not in entry:
                             entry["block"] = block_idx[0]
@@ -605,8 +608,11 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
 
     _walk(root)
 
-    # Strip trailing empty/[math] blocks
-    while entries and entries[-1].get("content") in ("[math]", "", None):
+    # Strip trailing [math] blocks
+    while entries and entries[-1].get("content") == "[math]":
+        entries.pop()
+    # Strip trailing empty blocks
+    while entries and entries[-1].get("type") == "empty":
         entries.pop()
 
     return entries if entries else []
@@ -920,7 +926,9 @@ def delete_block(file_path: str, match: str,
 
 def _make_block(item: dict, label_num: int) -> str:
     t = item.get("type", "text")
-    if t == "code":
+    if t == "empty":
+        return _make_text_block("", label_num)
+    elif t == "code":
         return _make_code_block(item["content"], label_num)
     elif t == "title":
         return _make_title_block(item["content"], label_num)
