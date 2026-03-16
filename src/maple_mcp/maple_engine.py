@@ -325,7 +325,7 @@ class MapleEngine:
             f'open = "&lobrk;", close = "&robrk;")'
         )
 
-    _ts2str_defined = False  # Set to False to force redefine after code changes
+    _ts2str_defined = False
 
     def _ensure_ts2str(self):
         if MapleEngine._ts2str_defined:

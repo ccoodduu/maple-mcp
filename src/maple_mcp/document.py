@@ -162,22 +162,6 @@ def _font_xml(text: str, bold=False, italic=False, underline=False,
     return f'<Font {attr_str}>{text}</Font>'
 
 
-UNIT_MAP = {
-    "ohm": "Ω", "Omega": "Ω", "Ω": "Ω",
-    "degC": "°C", "degF": "°F", "deg": "°",
-    "mu": "μ", "micro": "μ",
-    "alpha": "α", "beta": "β", "gamma": "γ", "delta": "δ",
-    "Delta": "Δ", "epsilon": "ε", "theta": "θ", "lambda": "λ",
-    "pi": "π", "rho": "ρ", "sigma": "σ", "tau": "τ",
-    "phi": "φ", "omega": "ω", "eta": "η", "nu": "ν",
-    "inf": "∞", "neq": "≠", "approx": "≈",
-    "leq": "≤", "geq": "≥", "pm": "±",
-    "cdot": "·", "times": "×", "sqrt": "√",
-    "sum": "∑", "prod": "∏", "int": "∫",
-    "in": "∈", "notin": "∉", "subset": "⊂",
-    "forall": "∀", "exists": "∃",
-    "Rarr": "→", "Larr": "←", "Harr": "↔", "dArr": "⇕", "hArr": "⇔",
-}
 
 
 

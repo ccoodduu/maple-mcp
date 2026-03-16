@@ -78,8 +78,6 @@ maple-mcp/
     ├── maple_engine.py        # Kernel + equation encode/decode
     ├── maple_reload.py        # Save/reload via agent or AHK
     ├── image_decode.py        # Wheeler + Base64 image codec
-    ├── live_connection.py     # Legacy bridge (unused)
-    └── worksheet.py           # Legacy worksheet mode (unused)
 ```
 
 ## Setup
@@ -95,4 +93,3 @@ maple-mcp/
 - `_count_section_depth` scans XML linearly - could be slow on very large documents
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax
 - Multi-level undo not supported (single .mw.bak backup)
-- `live_connection.py` and `worksheet.py` are legacy code from the bridge approach - can be removed
