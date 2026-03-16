@@ -203,6 +203,9 @@ def insert_after(match: str, items: list[dict],
 
     IMPORTANT: Use MAPLE syntax in equations, NOT LaTeX!
     Equations are NOT evaluated, they display exactly what you write.
+    Each {{}} must be ONE valid Maple expression (only one = sign).
+    Never chain equals like {{a = b = c}}. Instead show each step
+    separately: {{sin(x) = 1/2}} ⇔ {{x = Pi/6}}
 
     Safe equation examples:
       {{x^2 + 3*x - 4}}          - polynomial
