@@ -20,7 +20,12 @@ def _run_ahk(action: str, file_path: str = "") -> bool:
 
 
 def get_open_document_path() -> str | None:
-    """Get the file path of the currently open Maple document from the window title."""
+    """Get the file path of the currently open Maple document."""
+    result = _send_agent("getpath")
+    if result and not result.startswith("error"):
+        return result
+
+    # Fallback: AHK window title
     if not AHK_EXE.exists() or not AHK_SCRIPT.exists():
         return None
 
@@ -43,7 +48,6 @@ def get_open_document_path() -> str | None:
         )
         tmp.unlink(missing_ok=True)
         title = result.stdout.strip()
-        # Title format: "C:\path\to\file.mw - [Server N] - Maple 2025"
         match = re.match(r'(.+\.mw)', title)
         if match:
             return match.group(1)
@@ -52,9 +56,41 @@ def get_open_document_path() -> str | None:
     return None
 
 
+def _send_agent(cmd: str) -> str | None:
+    """Send command to Java Agent via TCP. Returns response or None if agent not running."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(5)
+        s.connect(("127.0.0.1", AGENT_PORT))
+        s.sendall(f"{cmd}\n".encode())
+        response = s.recv(4096).decode().strip()
+        s.close()
+        return response
+    except (ConnectionRefusedError, socket.timeout, OSError):
+        return None
+
+
 def save_in_maple() -> bool:
+    result = _send_agent("save")
+    if result is not None:
+        return result == "ok"
     return _run_ahk("save")
 
 
+AGENT_PORT = 19876
+
+
 def reload_in_maple(file_path: str) -> bool:
+    result = _send_agent(f"reload {file_path}")
+    if result is not None:
+        return result == "ok"
     return _run_ahk("reload", file_path)
+
+
+def reload_in_maple_async(file_path: str):
+    """Fire-and-forget reload - don't wait for completion."""
+    import threading
+    threading.Thread(
+        target=reload_in_maple, args=(file_path,), daemon=True
+    ).start()

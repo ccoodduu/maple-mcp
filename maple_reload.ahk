@@ -49,7 +49,7 @@ if (action = "reload") {
 
         javaHwnd := FindMapleJavaHwnd()
         if (javaHwnd != 0) {
-            ControlSend "{Enter}", , "ahk_id " javaHwnd
+            ControlSend "!y", , "ahk_id " javaHwnd
         }
 
         Sleep 500
