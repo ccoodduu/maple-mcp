@@ -52,6 +52,8 @@ def _replace_units_in_expr(expr: str) -> str:
                     parts.append(tok)
             return f"Unit({''.join(parts)})"
         return f"Unit('{unit}')"
+    # Normalize "number [[unit]]" → "number*[[unit]]" (space → multiplication)
+    expr = re.sub(r'(\w)\s+\[\[', r'\1*[[', expr)
     return re.sub(r'\[\[(.+?)\]\]', _replace, expr)
 
 
