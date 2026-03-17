@@ -122,16 +122,19 @@ def _latex_to_maple(expr: str) -> str:
 
 def _equation_xml(expr: str, executable: bool = True, style: str = "2D Math",
                    background: str | None = None) -> str:
+    original_expr = expr
     expr = _latex_to_maple(expr)
     expr = _replace_units_in_expr(expr)
-    try:
-        display_b64, content_b64 = engine.encode_equation(
-            expr, background=background)
-        if not content_b64:
-            raise ValueError("Empty encoding")
-    except Exception:
-        from xml.sax.saxutils import escape
-        return escape(expr)
+
+    engine._last_encode_error = None
+    display_b64, content_b64 = engine.encode_equation(
+        expr, background=background)
+    if not content_b64:
+        maple_err = engine._last_encode_error or "unknown error"
+        raise ValueError(
+            f"Equation encoding failed for: {original_expr}\n"
+            f"Maple error: {maple_err}"
+        )
 
     exe = "true" if executable else "false"
     return (
@@ -207,6 +210,30 @@ def _parse_markup(text: str) -> str:
     result = re.sub(r'\{=(.+?)=\}', lambda m: _protect(m, True), result)
 
     # Step 2: Process formatting (safe now - equations are placeholders)
+    # Flatten nested same-color blocks: {color:X}a {color:X}b{/color} c{/color} → {color:X}a b c{/color}
+    def _flatten_colors(text):
+        i, depth, current_color, parts = 0, 0, None, []
+        while i < len(text):
+            m_open = re.match(r'\{color:([0-9,]+)\}', text[i:])
+            if m_open:
+                if depth == 0:
+                    current_color = m_open.group(1)
+                    parts.append(m_open.group())
+                depth += 1
+                i += len(m_open.group())
+            elif text[i:].startswith('{/color}'):
+                depth -= 1
+                if depth == 0:
+                    parts.append('{/color}')
+                    current_color = None
+                i += len('{/color}')
+            else:
+                parts.append(text[i])
+                i += 1
+        return ''.join(parts)
+
+    result = _flatten_colors(result)
+
     def _replace_color(m):
         rgb = m.group(1)
         color_val = f"[{rgb}]"
@@ -334,7 +361,9 @@ def _make_section(title: str, level: int, content_blocks: list) -> str:
     from xml.sax.saxutils import escape
     inner = "".join(_block_to_xml(b) for b in content_blocks)
     return (
-        f'<Section collapsed="false" isCollapsible="true">'
+        f'<Section collapsed="false" isCollapsible="true" drawButton="true"'
+        f' MultipleChoiceAnswerIndex="-1" MultipleChoiceRandomizeChoices="false"'
+        f' TrueFalseAnswerIndex="-1" EssayAnswerRows="5" EssayAnswerColumns="60">'
         f'<Title><Text-field style="{style}" layout="{style}">'
         f'{escape(title)}</Text-field></Title>'
         f'{inner}'
@@ -388,11 +417,12 @@ def _append_blocks(file_path: str, blocks) -> str:
 def _decode_equation_text(eq_el: ET.Element) -> str:
     b64 = eq_el.text
     if not b64:
-        return "[math]"
+        return "[CORRUPT EQUATION]"
     try:
-        return engine.decode_equation(b64.strip())
+        result = engine.decode_equation(b64.strip())
+        return result if result else "[CORRUPT EQUATION]"
     except Exception:
-        return "[math]"
+        return "[CORRUPT EQUATION]"
 
 
 def _decode_entities(text: str) -> str:
@@ -410,6 +440,11 @@ def _decode_entities(text: str) -> str:
 
 
 def _extract_text(el: ET.Element) -> str:
+    # Check if the Text-field itself has a background color
+    tf_bg = None
+    if el.get("opaque") == "true" and el.get("background"):
+        tf_bg = el.get("background", "").strip("[]")
+
     parts = []
 
     def _process_children(element):
@@ -419,18 +454,18 @@ def _extract_text(el: ET.Element) -> str:
             if child.tag == "Equation":
                 exe = child.get("executable", "false") == "true"
                 decoded = _decode_equation_text(child)
-                # Check if equation has highlight baked into Typesetting
                 eq_bg = getattr(engine, '_last_eq_background', None)
-                if decoded and decoded != "[math]":
+                if decoded and decoded != "[CORRUPT EQUATION]":
                     if exe:
                         eq_markup = f"{{!{decoded}!}}"
                     else:
                         eq_markup = f"{{{{{decoded}}}}}"
-                    if eq_bg:
+                    # Only add per-equation color if different from parent
+                    if eq_bg and eq_bg != tf_bg:
                         eq_markup = f"{{color:{eq_bg}}}{eq_markup}{{/color}}"
                     parts.append(eq_markup)
                 else:
-                    parts.append("[math]")
+                    parts.append("[CORRUPT EQUATION]")
             elif child.tag == "Font":
                 bold = child.get("bold") == "true"
                 italic = child.get("italic") == "true"
@@ -438,8 +473,6 @@ def _extract_text(el: ET.Element) -> str:
                 has_bg = child.get("opaque") == "true" and child.get("background")
                 bg_color = child.get("background", "")
 
-                # Collect inner content (may contain nested Font/Equation)
-                inner_parts = []
                 old_parts = list(parts)
                 parts.clear()
                 _process_children(child)
@@ -454,7 +487,8 @@ def _extract_text(el: ET.Element) -> str:
                         inner_text = f"*{inner_text}*"
                     if underline:
                         inner_text = f"__{inner_text}__"
-                    if has_bg:
+                    # Only wrap in color if different from parent Text-field
+                    if has_bg and bg_color.strip("[]") != tf_bg:
                         rgb = bg_color.strip("[]")
                         inner_text = f"{{color:{rgb}}}{inner_text}{{/color}}"
                     parts.append(inner_text)
@@ -465,6 +499,11 @@ def _extract_text(el: ET.Element) -> str:
 
     _process_children(el)
     text = " ".join(p for p in parts if p)
+
+    # Wrap entire text in parent's background color (one block, not fragmented)
+    if tf_bg:
+        text = f"{{color:{tf_bg}}}{text}{{/color}}"
+
     return _decode_entities(_decode_maple_text(text))
 
 
@@ -608,8 +647,8 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
 
     _walk(root)
 
-    # Strip trailing [math] blocks
-    while entries and entries[-1].get("content") == "[math]":
+    # Strip trailing corrupt equation blocks
+    while entries and entries[-1].get("content") == "[CORRUPT EQUATION]":
         entries.pop()
     # Strip trailing empty blocks
     while entries and entries[-1].get("type") == "empty":
@@ -829,6 +868,46 @@ def _validate_heading_depth(content: str, position: int, items: list[dict]):
                 )
 
 
+def _readback(new_xml: str) -> str:
+    """Parse inserted XML back to readable text to verify encoding."""
+    try:
+        root = ET.fromstring(f"<R>{new_xml}</R>")
+    except ET.ParseError:
+        return ""
+
+    parts = []
+
+    def _walk(parent):
+        for child in parent:
+            if child.tag == "Section":
+                for title in child.iter("Title"):
+                    for tf in title.iter("Text-field"):
+                        text = _extract_text(tf)
+                        if text:
+                            style = tf.get("style", "")
+                            level = int(style[-1]) if style.startswith("Heading") else 1
+                            parts.append(f"{'#' * level} {text}")
+                    break
+                _walk(child)
+            elif child.tag == "Presentation-Block":
+                for group in child.iter("Group"):
+                    for tf in group.iter("Text-field"):
+                        style = tf.get("style", "")
+                        if "Output" in style:
+                            continue
+                        text = _extract_text(tf)
+                        if text:
+                            if style == "Title":
+                                parts.append(f"TITLE: {text}")
+                            else:
+                                parts.append(text)
+                        for img in tf.iter("Image"):
+                            parts.append("[IMAGE]")
+
+    _walk(root)
+    return "\n".join(parts)
+
+
 def insert_after(file_path: str, match: str, items: list[dict],
                  section: str | None = None, occurrence: int | None = None) -> str:
     _backup(file_path)
@@ -846,7 +925,7 @@ def insert_after(file_path: str, match: str, items: list[dict],
 
     content = content[:block["end"]] + "\n" + new_xml + content[block["end"]:]
     path.write_text(content, encoding="utf-8")
-    return str(path)
+    return _readback(new_xml)
 
 
 def insert_before(file_path: str, match: str, items: list[dict],
@@ -866,7 +945,7 @@ def insert_before(file_path: str, match: str, items: list[dict],
 
     content = content[:block["start"]] + new_xml + "\n" + content[block["start"]:]
     path.write_text(content, encoding="utf-8")
-    return str(path)
+    return _readback(new_xml)
 
 
 def replace_block(file_path: str, match: str, items: list[dict],
@@ -895,7 +974,7 @@ def replace_block(file_path: str, match: str, items: list[dict],
 
     content = content[:block["start"]] + new_xml + content[block["end"]:]
     path.write_text(content, encoding="utf-8")
-    return str(path)
+    return _readback(new_xml)
 
 
 def delete_block(file_path: str, match: str,
@@ -921,7 +1000,6 @@ def delete_block(file_path: str, match: str,
     _backup(file_path)
     content = content[:block["start"]] + content[block["end"]:]
     path.write_text(content, encoding="utf-8")
-    return str(path)
 
 
 def _make_block(item: dict, label_num: int) -> str:
@@ -993,4 +1071,6 @@ def insert_content(file_path: str, items: list[dict]) -> str:
     root = ET.parse(file_path).getroot()
     label = _next_label_num(root)
     blocks, _, _ = _build_nested(items, 0, label)
-    return _append_blocks(file_path, blocks)
+    _append_blocks(file_path, blocks)
+    new_xml = "\n".join(_block_to_xml(b) for b in blocks)
+    return _readback(new_xml)
