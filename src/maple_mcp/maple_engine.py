@@ -404,21 +404,21 @@ TS2Str := proc(e)
     if not type(e, function) then return "" end if;
     t := op(0, e);
     s := "";
-    if t = Typesetting:-mcomplete then
+    if type(e, specfunc(Typesetting:-mcomplete)) then
         s := procname(op(1, e))
-    elif t = Typesetting:-mfrac then
+    elif type(e, specfunc(Typesetting:-mfrac)) then
         s := cat("(", procname(op(1,e)), ")/(", procname(op(2,e)), ")")
-    elif t = Typesetting:-msup then
+    elif type(e, specfunc(Typesetting:-msup)) then
         s := cat(procname(op(1,e)), "^", procname(op(2,e)))
-    elif t = Typesetting:-msub then
+    elif type(e, specfunc(Typesetting:-msub)) then
         s := cat(procname(op(1,e)), "_", procname(op(2,e)))
-    elif t = Typesetting:-mfenced then
-        if has(e, Typesetting:-msemantics = "Unit") then
+    elif type(e, specfunc(Typesetting:-mfenced)) then
+        if has(e, "&lobrk;") then
             s := cat("[[", procname(op(1,e)), "]]")
         else
             s := cat("(", procname(op(1,e)), ")")
         end if
-    elif t = Typesetting:-msqrt then
+    elif type(e, specfunc(Typesetting:-msqrt)) then
         s := cat("sqrt(", procname(op(1,e)), ")")
     else
         for i from 1 to nops(e) do
@@ -430,6 +430,9 @@ TS2Str := proc(e)
     s
 end proc:
 ''')
+        # Warm up: first call to TS2Str with Typesetting module fails
+        # due to lazy module loading. Run a dummy call to force initialization.
+        self.execute('TS2Str(Typesetting:-mi("x")):')
         MapleEngine._ts2str_defined = True
 
     def decode_equation(self, b64_data: str) -> str:
@@ -443,7 +446,7 @@ end proc:
         tmp_fwd = tmp.replace(chr(92), "/")
 
         result = self.execute(
-            f'TS2Str(op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m")))'
+            f'printf("%s", TS2Str(op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m"))))'
         )
         if "Error" in result or "Typesetting" in result:
             result = self.execute(
