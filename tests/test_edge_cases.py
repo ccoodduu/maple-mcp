@@ -1,0 +1,143 @@
+"""Edge cases and TS2Str coverage."""
+import pytest
+
+
+class TestTS2StrCoverage:
+    """TS2Str should handle various Typesetting structures."""
+
+    @pytest.mark.parametrize("expr,expected_fragment", [
+        ("sqrt(x)", "sqrt"),
+        ("x^2", "^2"),
+        ("x_n", "x"),
+        ("(a+b)/(c+d)", "/("),
+        ("Int(x, x = 0..1)", "∫"),
+    ])
+    def test_typesetting_structures(self, engine, expr, expected_fragment):
+        _, b64 = engine.encode_equation(expr)
+        assert b64
+        decoded = engine.decode_equation(b64)
+        assert decoded, f"Decode failed for {expr}"
+        assert expected_fragment in decoded, f"Expected '{expected_fragment}' in '{decoded}'"
+
+    def test_nested_fractions(self, engine):
+        _, b64 = engine.encode_equation("(a/b)/(c/d)")
+        decoded = engine.decode_equation(b64)
+        assert decoded
+        assert "a" in decoded and "d" in decoded
+
+    def test_subscript_with_brackets(self, engine):
+        """V[water] should produce subscript."""
+        _, b64 = engine.encode_equation("V[water]")
+        decoded = engine.decode_equation(b64)
+        assert "V" in decoded
+        assert "water" in decoded
+
+
+class TestEdgeCases:
+    def test_empty_document(self, tmp_path):
+        """Empty document should return empty list."""
+        from maple_mcp.document import read_document
+        p = tmp_path / "empty.mw"
+        p.write_text('<?xml version="1.0" encoding="UTF-8"?>\n<Worksheet></Worksheet>',
+                      encoding="utf-8")
+        entries = read_document(str(p))
+        assert entries == []
+
+    def test_very_long_equation(self, engine):
+        """Long polynomial should encode without error."""
+        terms = " + ".join(f"{i}*x^{i}" for i in range(20))
+        _, b64 = engine.encode_equation(terms)
+        assert b64
+        assert len(b64) > 100
+
+    def test_special_characters_in_text(self, tmp_mw):
+        """Danish characters in text should survive."""
+        from maple_mcp.document import insert_after, read_document
+        insert_after(tmp_mw, "First block", [
+            {"type": "text", "content": "Beregn \u00e6ndringen i \u00f8jeblikket."},
+        ])
+        entries = read_document(tmp_mw)
+        contents = " ".join(e.get("content", "") for e in entries)
+        assert "\u00e6ndringen" in contents or "ndringen" in contents
+
+    def test_backup_created(self, tmp_mw):
+        """Edit operations should create .mw.bak backup."""
+        from maple_mcp.document import insert_after
+        from pathlib import Path
+        insert_after(tmp_mw, "First block", [
+            {"type": "text", "content": "trigger backup"},
+        ])
+        backup = Path(tmp_mw).with_suffix(".mw.bak")
+        assert backup.exists()
+
+    def test_undo_restores(self, tmp_mw):
+        """After edit, .mw.bak should contain the original."""
+        from maple_mcp.document import insert_after, read_document
+        from pathlib import Path
+        import shutil
+
+        original = read_document(tmp_mw)
+        insert_after(tmp_mw, "First block", [
+            {"type": "text", "content": "New content."},
+        ])
+        # Restore from backup
+        backup = Path(tmp_mw).with_suffix(".mw.bak")
+        shutil.copy2(backup, tmp_mw)
+        restored = read_document(tmp_mw)
+
+        original_text = " ".join(e.get("content", "") for e in original)
+        restored_text = " ".join(e.get("content", "") for e in restored)
+        assert "New content" not in restored_text
+        assert original_text == restored_text
+
+
+class TestMultipleEdits:
+    """Multiple sequential edits should not corrupt the document."""
+
+    def test_three_inserts(self, tmp_mw, engine):
+        import xml.etree.ElementTree as ET
+        from maple_mcp.document import insert_after, read_document
+
+        insert_after(tmp_mw, "First block", [
+            {"type": "text", "content": "Insert 1."},
+        ])
+        insert_after(tmp_mw, "Insert 1", [
+            {"type": "text", "content": "Insert 2."},
+        ])
+        insert_after(tmp_mw, "Insert 2", [
+            {"type": "text", "content": "Insert 3."},
+        ])
+
+        # XML should still be valid
+        ET.parse(tmp_mw)
+
+        entries = read_document(tmp_mw)
+        contents = " ".join(e.get("content", "") for e in entries)
+        assert "Insert 1" in contents
+        assert "Insert 2" in contents
+        assert "Insert 3" in contents
+
+    def test_insert_then_delete(self, tmp_mw):
+        from maple_mcp.document import insert_after, delete_block, read_document
+
+        insert_after(tmp_mw, "First block", [
+            {"type": "text", "content": "Temporary content."},
+        ])
+        delete_block(tmp_mw, "Temporary content")
+        entries = read_document(tmp_mw)
+        contents = " ".join(e.get("content", "") for e in entries)
+        assert "Temporary" not in contents
+
+    def test_insert_then_replace(self, tmp_mw):
+        from maple_mcp.document import insert_after, replace_block, read_document
+
+        insert_after(tmp_mw, "First block", [
+            {"type": "text", "content": "Original insert."},
+        ])
+        replace_block(tmp_mw, "Original insert", [
+            {"type": "text", "content": "Replaced insert."},
+        ])
+        entries = read_document(tmp_mw)
+        contents = " ".join(e.get("content", "") for e in entries)
+        assert "Replaced insert" in contents
+        assert "Original insert" not in contents

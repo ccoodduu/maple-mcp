@@ -11,7 +11,8 @@ __pycache__/
 *.mw
 *.ipynb
 *.txt
-test_*
+/test_*.json
+/test_*.py
 extracted_*
 tmp_*
 ahk_test.ahk
