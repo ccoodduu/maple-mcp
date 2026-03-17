@@ -180,9 +180,28 @@ class MapleEngine:
 
         expr = expr.strip().rstrip(";:")
 
+        # := assignments lose the variable name in InertForm — use = for display
+        if ':=' in expr:
+            expr = expr.replace(':=', '=', 1)
+
+        def _greek_subs_code():
+            """Generate Maple subs() to convert DeltaX → ΔX variable names."""
+            import re as _re
+            names = set()
+            for m in _re.finditer(r'\bDelta([A-Z])\b', expr):
+                full = m.group(0)    # e.g. "DeltaT"
+                letter = m.group(1)  # e.g. "T"
+                names.add((full, f"&Delta;{letter}"))
+            if not names:
+                return ''
+            subs_parts = ', '.join(
+                f'Typesetting:-mi("{old}") = Typesetting:-mi("{new}")'
+                for old, new in names
+            )
+            return f'ts := subs({subs_parts}, ts):\n'
+
         has_units = "Unit(" in expr
 
-        # Map unit names to display entities
         UNIT_DISPLAY = {
             "Omega": "&Omega;",
             "degC": "&deg;C",
@@ -190,84 +209,108 @@ class MapleEngine:
         }
 
         if has_units:
-            # Extract the expression WITHOUT Unit() and the Unit() part separately
-            # e.g. "c = 4180*Unit('J'/('kg'*'degC'))" → base="c = 4180", unit="'J'/('kg'*'degC')"
-            unit_match = re.search(r'\*?Unit\((.+)\)', expr)
-            if unit_match:
-                base_expr = expr[:unit_match.start()].rstrip('*')
-                unit_inner = unit_match.group(1)
-                is_compound = '/' in unit_inner or '*' in unit_inner
+            # Replace each Unit(...) with a placeholder, build unit TS for each
+            placeholders = {}
+            ph_counter = [0]
+            def _replace_unit(m):
+                ph_name = f'UPH{ph_counter[0]}'
+                ph_counter[0] += 1
+                unit_inner = m.group(1)
+                placeholders[ph_name] = self._build_compound_unit_ts(unit_inner, UNIT_DISPLAY)
+                return ph_name
+            # Match Unit(...) with balanced parentheses
+            def _find_units(s):
+                result = s
+                while 'Unit(' in result:
+                    idx = result.find('Unit(')
+                    depth, end = 0, idx + 5
+                    for j in range(idx + 5, len(result)):
+                        if result[j] == '(': depth += 1
+                        elif result[j] == ')':
+                            if depth == 0: end = j; break
+                            depth -= 1
+                    inner = result[idx+5:end]
+                    m_obj = type('M', (), {'group': lambda self, i=0, v=inner: v})()
+                    ph = _replace_unit(m_obj)
+                    result = result[:idx] + ph + result[end+1:]
+                return result
+            expr_with_ph = _find_units(expr)
 
-                unit_ts = self._build_compound_unit_ts(unit_inner, UNIT_DISPLAY)
+            # Build Maple code: InertForm on placeholders, then substitute unit TS
+            locals_decl = ', '.join(['ts'] + [f'{k}_ts' for k in placeholders])
+            assign_units = '\n'.join(
+                f'{k}_ts := {v}:' for k, v in placeholders.items()
+            )
+            subs_code = 'ts := subsindets(ts, specfunc(Typesetting:-mi), proc(x) '
+            for k in placeholders:
+                subs_code += f'if op(1,x) = "{k}" then {k}_ts el'
+            subs_code += 'se x end if end proc):'
 
-                r1 = self._execute_clean(
-                    f'local ts, unit_ts;'
-                    f'ts := InertForm:-Typeset(InertForm:-Parse("{base_expr}"), inert=false):'
-                    f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):'
-                    f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):'
-                    f'unit_ts := {unit_ts}:'
-                    f'ts := Typesetting:-mrow(op(ts), '
-                    f'Typesetting:-mo("&InvisibleTimes;"), unit_ts):'
-                    f'DocumentTools:-Layout:-Equation(ts, style=TwoDimInput, executable=false)'
-                )
-            else:
-                r1 = self._execute_clean(
-                    f'DocumentTools:-Layout:-Equation({expr}, style=TwoDimInput, executable=false)'
-                )
-        else:
-            # InertForm in CLEAN subprocess (no user variables)
             raw = self._execute_clean(
-                f'local ts;\n'
-                f'ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false):\n'
+                f'local {locals_decl}:\n'
+                f'ts := InertForm:-Typeset(InertForm:-Parse("{expr_with_ph}"), inert=false):\n'
                 f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
                 f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
+                f'{assign_units}\n'
+                f'{subs_code}\n'
+                f'ts := subsindets(ts, specfunc(Typesetting:-mrow), proc(x) '
+                f'local i, ops, new_ops; ops := [op(x)]; new_ops := []; '
+                f'for i from 1 to nops(ops) do '
+                f'if i < nops(ops) and type(ops[i], specfunc(Typesetting:-mo)) '
+                f'and op(1,ops[i]) = "&sdot;" '
+                f'and type(ops[i+1], specfunc(Typesetting:-mfenced)) then '
+                f'new_ops := [op(new_ops), Typesetting:-mo("&InvisibleTimes;")] '
+                f'else new_ops := [op(new_ops), ops[i]] end if end do; '
+                f'Typesetting:-mrow(op(new_ops)) end proc):\n'
+                f'{_greek_subs_code()}'
                 f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
                 f' style=TwoDimInput, executable=false)));\n'
             )
-            # Extract base64 from clean output
-            lines = [l for l in raw.split('\n') if l and l != 'ts']
-            content_b64 = ''.join(lines).strip()
-            display_b64 = content_b64
-            return display_b64, content_b64
+        else:
+            raw = self._execute_clean(
+                f'local ts:\n'
+                f'ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false):\n'
+                f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
+                f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
+                f'{_greek_subs_code()}'
+                f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
+                f' style=TwoDimInput, executable=false)));\n'
+            )
 
-        match1 = re.findall(r'"([A-Za-z0-9+/=]{4,})"', r1)
-        content_b64 = match1[-1] if match1 else ""
+        if 'Error' in raw or 'error' in raw:
+            self._last_encode_error = raw.strip()
+            return '', ''
+        content_b64 = ''.join(raw.split())
 
         # Inject background color into Typesetting elements
         if background and content_b64:
             import base64
-            raw = base64.b64decode(content_b64).decode('latin-1')
-            # Add background and opaque to all mi, mn, mo elements
-            for tag in ['mi', 'mn', 'mo']:
-                maple_tag = f'I#{tag}G'
-                raw = raw.replace(maple_tag,
-                    f'I#{tag}G')  # keep tag, we'll add via subs in Maple
-            # Use Maple to inject background attributes
-            import tempfile, os
+            decoded = base64.b64decode(content_b64).decode('latin-1')
             tmp = os.path.join(os.environ.get("TEMP", "/tmp"), "maple_bg.m")
             with open(tmp, 'wb') as f:
-                f.write(raw.encode('latin-1'))
+                f.write(decoded.encode('latin-1'))
             tmp_fwd = tmp.replace(chr(92), '/')
 
-            r_bg = self.execute(
-                f'local ts, bg_ts;'
-                f'ts := op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m")):'
+            bg_raw = self._execute_clean(
+                f'local ts, bg_ts:\n'
+                f'ts := op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m")):\n'
                 f'bg_ts := subsindets(ts, specfunc(Typesetting:-mi), '
-                f'  proc(x) Typesetting:-mi(op(x), background="{background}", opaque="true") end proc):'
+                f'  proc(x) Typesetting:-mi(op(x), background="{background}", opaque="true") end proc):\n'
                 f'bg_ts := subsindets(bg_ts, specfunc(Typesetting:-mn), '
-                f'  proc(x) Typesetting:-mn(op(x), background="{background}", opaque="true") end proc):'
+                f'  proc(x) Typesetting:-mn(op(x), background="{background}", opaque="true") end proc):\n'
                 f'bg_ts := subsindets(bg_ts, specfunc(Typesetting:-mo), '
-                f'  proc(x) Typesetting:-mo(op(x), background="{background}", opaque="true") end proc):'
-                f'DocumentTools:-Layout:-Equation(bg_ts, style=TwoDimInput, executable=false)'
+                f'  proc(x) Typesetting:-mo(op(x), background="{background}", opaque="true") end proc):\n'
+                f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(bg_ts,'
+                f' style=TwoDimInput, executable=false)));\n'
             )
             try:
                 os.unlink(tmp)
             except OSError:
                 pass
 
-            match_bg = re.findall(r'"([A-Za-z0-9+/=]{4,})"', r_bg)
-            if match_bg:
-                content_b64 = match_bg[-1]
+            bg_b64 = ''.join(bg_raw.split())
+            if bg_b64:
+                content_b64 = bg_b64
 
         display_b64 = content_b64
         return display_b64, content_b64
@@ -289,17 +332,16 @@ class MapleEngine:
             den_str = None
 
         def _unit_mi(name):
-            # Handle exponents: m^3 → msup(mi("m"), mn("3"))
             if '^' in name:
                 base, exp = name.split('^', 1)
                 base_display = display_map.get(base, base)
                 return (
                     f'Typesetting:-msup('
-                    f'Typesetting:-mi("{base_display}", italic="false"),'
+                    f'Typesetting:-mi("{base_display}"),'
                     f'Typesetting:-mn("{exp}"))'
                 )
             display = display_map.get(name, name)
-            return f'Typesetting:-mi("{display}", italic="false")'
+            return f'Typesetting:-mi("{display}")'
 
         def _build_product(s):
             names = [n.strip() for n in s.split('*')]
@@ -308,7 +350,7 @@ class MapleEngine:
             items = []
             for i, n in enumerate(names):
                 if i > 0:
-                    items.append('Typesetting:-mo("&sdot;")')
+                    items.append('Typesetting:-mo("&InvisibleTimes;")')
                 items.append(_unit_mi(n))
             return f'Typesetting:-mrow({", ".join(items)})'
 
@@ -316,19 +358,16 @@ class MapleEngine:
 
         if den_str:
             den_ts = _build_product(den_str)
-            frac_ts = (
-                f'Typesetting:-mfrac('
-                f'Typesetting:-mrow({num_ts}),'
-                f'Typesetting:-mrow({den_ts}))'
-            )
+            frac_ts = f'Typesetting:-mfrac({num_ts},{den_ts})'
         else:
             frac_ts = num_ts
 
+        # Match Maple's native format: content first, then open/close, msemantics last
         return (
             f'Typesetting:-mfenced('
-            f'Typesetting:-mrow({frac_ts}),'
-            f'Typesetting:-msemantics = "Unit",'
-            f'open = "&lobrk;", close = "&robrk;")'
+            f'{frac_ts},'
+            f'open = "&lobrk;", close = "&robrk;",'
+            f'Typesetting:-msemantics = "Unit")'
         )
 
     @staticmethod
@@ -411,6 +450,9 @@ end proc:
             os.unlink(tmp)
         except OSError:
             pass
+
+        if "Error" in result:
+            return ""
 
         import html
         result = result.strip('"')
