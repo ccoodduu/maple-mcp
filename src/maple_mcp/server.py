@@ -5,7 +5,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent, ImageContent
 
 from maple_mcp.maple_engine import engine
-from maple_mcp.maple_reload import reload_in_maple, reload_in_maple_async, save_in_maple, get_open_document_path
+from maple_mcp.maple_reload import reload_in_maple, save_in_maple, get_open_document_path
 from maple_mcp.image_decode import decode_maple_image
 from maple_mcp import document
 
@@ -32,10 +32,13 @@ def _save_and_edit(edit_fn) -> str:
         save_in_maple()
         _needs_save = False
 
-    edit_fn(str(path))
+    readback = edit_fn(str(path))
 
     # Fire-and-forget reload - LLM continues immediately
-    reload_in_maple_async(str(path))
+    reload_in_maple(str(path))
+
+    if readback:
+        return f"Done, reads as:\n{readback}"
     return "Done."
 
 
@@ -170,67 +173,47 @@ def insert_after(match: str, items: list[dict],
                  section: str | None = None, occurrence: int | None = None) -> str:
     """Insert content after a matched block.
 
-    Finds a block containing the match text and inserts new content after it.
-
     MATCHING: Copy a long, unique substring (15+ chars) directly from
-    read_document output. Never use short generic matches like "a)"
-    or "sin". For section headings, include the # prefix (e.g. "## b)"
-    instead of "b)").
-
-    SECTION HEADING vs TEXT BLOCK:
-    - Match a section heading (e.g. "## b)") → inserts AFTER the
-      entire section including all its children.
-    - Match a text block → inserts after just that block, inside
-      the same parent.
-    To insert INSIDE an existing section, match a text block within
-    it — not the heading.
+    read_document output. For section headings, include the # prefix.
+    Matching a section heading inserts AFTER the entire section.
+    Matching a text block inserts after just that block, inside its parent.
 
     Each item is a dict with 'type' and 'content':
       - {"type": "text", "content": "Text with {{inline_math}} and **bold**"}
-      - {"type": "code", "content": "solve(x^2-1, x)"}
-      - {"type": "heading", "content": "Section Title", "level": 1}
+      - {"type": "code", "content": "m = 1000*200/1000"}
+      - {"type": "heading", "content": "a)", "level": 2}
       - {"type": "image", "path": "C:/path/to/image.png"}
+      - {"type": "empty"}  (blank line)
 
-    This is a Maple Document mode editor. There are NO code blocks.
-    Type "code" creates a single executable 2D Math equation.
-    For multiple statements, use multiple {"type": "code"} items.
+    This is Maple Document mode — there are no code blocks.
+    Use type "code" for executable 2D Math equations.
+    Code must show a full calculation, NEVER bare numbers.
 
-    Formatting in text content (MAPLE syntax, NOT LaTeX):
-      {{expr}}  - non-executable inline 2D Math
-      {!expr!}  - executable 2D Math, output below
-      {=expr=}  - executable 2D Math, inline output
+    Markup syntax (MAPLE syntax, NOT LaTeX):
+      {{expr}}                      non-executable inline 2D Math
+      {!expr!}                      executable 2D Math, output below
+      {=expr=}                      executable 2D Math, inline output
       **bold**  *italic*  __underline__
-      {color:R,G,B}text{/color}  - highlight background
-      [[unit]]  - Maple unit in equations
+      {color:R,G,B}text{/color}    highlight background
+      [[unit]]                      unit in equations: [[kg]], [[J/(kg*degC)]]
 
-    IMPORTANT RULES:
-    - Use MAPLE syntax in equations, NOT LaTeX!
-    - ALL math must use {{}} — never write math as plain text.
-      WRONG: "x^2 - 5*x + 6 = 0"
-      RIGHT: "{{x^2 - 5*x + 6 = 0}}"
-    - Equations are NOT evaluated, they display exactly what you write.
-    - **bold** markers must always be balanced (opening AND closing).
-    - Keep {color:R,G,B} blocks simple — one block per answer line,
-      not many fragments.
+    ALL math must use {{}} — never write math as plain text.
+    ALL numbers with units must use {{200*[[kg]]}}, never "200 kg".
+    Equations are NOT evaluated — {{3*4}} displays 3·4, not 12.
+    Greek letters use Maple names: Delta, rho, Omega (not \\delta).
+    Subscripts use [...]: c[p], V[water] (not c_p, V_water).
+    Combine Greek+variable with *: Delta*T shows Δ·T (DeltaT shows literal text).
+
     CRITICAL: Each {{}} must contain at most ONE = sign.
-    {{a = b = c}} WILL FAIL and show as raw text.
-    WRONG: {{x = Pi - Pi/6 = 5*Pi/6}}
-    RIGHT: {{x = Pi - Pi/6}} ⇔ {{x = 5*Pi/6}}
+    {{a = b = c}} WILL FAIL. Use: {{a = b}} ⇔ {{c = d}}
 
-    Safe equation examples:
-      {{x^2 + 3*x - 4}}          - polynomial
-      {{int(x^2, x)}}            - integral symbol
-      {{Int(x^2, x = 0..3)}}     - definite integral with limits
-      {{solve(x^2 - 1, x)}}      - solve expression
-      {{f(x) = cos(x)}}          - equality
-      {{3*4}}                     - shows 3·4 (not evaluated to 12)
-      {{a/b + c/d}}               - fractions
-      {{500*[[Omega]]}}           - with unit
-      {{4180*[[J/(kg*degC)]]}}    - compound unit
+    Maple syntax examples:
+      {{Int(x^2, x = 0..3)}}     definite integral (capital I)
+      {{solve(x^2 - 1, x)}}      solve expression
+      {{500*[[Omega]]}}           number with unit
+      {{4180*[[J/(kg*degC)]]}}    compound unit
 
-    Highlight with equations:
-      {color:255,255,0}**Svar: {{x = 42}}**{/color}
-      → yellow highlighted bold text with inline equation
+    Fractions: ALWAYS use (numerator)/(denominator) with parentheses.
 
     Args:
         match: Text substring to find the target block
@@ -298,9 +281,16 @@ def delete_block(match: str, section: str | None = None,
         occurrence: Which match to use if multiple (1-based)
         delete_section: Must be True to delete an entire section
     """
-    return _save_and_edit(
-        lambda p: document.delete_block(p, match, section, occurrence, delete_section)
-    )
+    global _needs_save
+    path = _get_path()
+    if isinstance(path, str):
+        return path
+    if _needs_save:
+        save_in_maple()
+        _needs_save = False
+    document.delete_block(str(path), match, section, occurrence, delete_section)
+    reload_in_maple(str(path))
+    return "Done."
 
 
 @mcp.tool()
@@ -335,8 +325,49 @@ def undo() -> str:
 
     import shutil
     shutil.copy2(backup, path)
-    reload_in_maple_async(str(path))
+    reload_in_maple(str(path))
     return f"Restored from backup. Document reloaded."
+
+
+@mcp.tool()
+def screenshot_maple() -> list[ImageContent] | str:
+    """Take a screenshot of the Maple window to verify document rendering.
+
+    Use this after editing to visually check that equations, units,
+    formatting, and layout rendered correctly in Maple.
+    Returns the screenshot as an image.
+    """
+    import ctypes
+    from ctypes import wintypes
+    from PIL import ImageGrab
+    import io
+    import time
+
+    user32 = ctypes.windll.user32
+
+    # Wait briefly for any pending reload to finish
+    time.sleep(0.5)
+
+    # Find Maple window - try AutoHotkeyGUI wrapper first, then SunAwtFrame
+    hwnd = user32.FindWindowW("AutoHotkeyGUI", None)
+    if not hwnd:
+        hwnd = user32.FindWindowW("SunAwtFrame", None)
+    if not hwnd:
+        return "Could not find Maple window."
+
+    # Get window position
+    rect = wintypes.RECT()
+    user32.GetWindowRect(hwnd, ctypes.byref(rect))
+
+    # Capture that region of the screen
+    bbox = (rect.left, rect.top, rect.right, rect.bottom)
+    img = ImageGrab.grab(bbox)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+
+    return [ImageContent(type="image", data=b64, mimeType="image/png")]
 
 
 @mcp.resource("maple://help/{topic}")

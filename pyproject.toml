@@ -5,6 +5,7 @@ description = "MCP server for Maple computer algebra system"
 requires-python = ">=3.10"
 dependencies = [
     "mcp[cli]",
+    "Pillow",
 ]
 
 [project.scripts]
