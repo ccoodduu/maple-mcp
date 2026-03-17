@@ -215,11 +215,6 @@ def insert_after(match: str, items: list[dict],
 
     Fractions: ALWAYS use (numerator)/(denominator) with parentheses.
 
-    Unit example (complete pattern for physics):
-      text:  "Formlen er {{m = rho*V}}, hvor {{rho = 1000 [[kg/m^3]]}}."
-      code:  {"type": "code", "content": "m = 1000*[[kg/m^3]]*0.2*[[m^3]]"}
-      svar:  "{color:255,255,0}**Svar: Massen er {{m = 200*[[kg]]}}.**{/color}"
-
     Args:
         match: Text substring to find the target block
         items: Content blocks to insert
