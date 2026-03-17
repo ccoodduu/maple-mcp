@@ -79,6 +79,7 @@ class MapleEngine:
         self._text_output = []
         self._error_output = []
         self._cb_refs = []
+        self._ts2str_defined = False
 
     def _ensure_kernel(self):
         if self._kv is not None:
@@ -388,10 +389,8 @@ class MapleEngine:
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return ""
 
-    _ts2str_defined = False
-
     def _ensure_ts2str(self):
-        if MapleEngine._ts2str_defined:
+        if self._ts2str_defined:
             return
         self._ensure_kernel()
         self.execute('''
@@ -433,7 +432,7 @@ end proc:
         # Warm up: first call to TS2Str with Typesetting module fails
         # due to lazy module loading. Run a dummy call to force initialization.
         self.execute('TS2Str(Typesetting:-mi("x")):')
-        MapleEngine._ts2str_defined = True
+        self._ts2str_defined = True
 
     def decode_equation(self, b64_data: str) -> str:
         import base64
