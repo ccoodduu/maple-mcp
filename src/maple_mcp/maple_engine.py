@@ -413,7 +413,11 @@ TS2Str := proc(e)
     elif t = Typesetting:-msub then
         s := cat(procname(op(1,e)), "_", procname(op(2,e)))
     elif t = Typesetting:-mfenced then
-        s := cat("(", procname(op(1,e)), ")")
+        if has(e, Typesetting:-msemantics = "Unit") then
+            s := cat("[[", procname(op(1,e)), "]]")
+        else
+            s := cat("(", procname(op(1,e)), ")")
+        end if
     elif t = Typesetting:-msqrt then
         s := cat("sqrt(", procname(op(1,e)), ")")
     else
