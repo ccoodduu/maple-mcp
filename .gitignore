@@ -6,6 +6,7 @@ __pycache__/
 # Test files
 *.class
 *.jar
+!reload-agent.jar
 *.png
 *.bin
 *.mw
