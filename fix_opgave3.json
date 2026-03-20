@@ -1,9 +1,0 @@
-[
-  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
-  {"tool": "replace_block", "args": {
-    "match": "Energien beregnes med {{Q=m⋅c⋅DeltaT}} , hvor [CORRUPT EQUATION] °C og {{c=4180}} [[J/(kg*degC)]].",
-    "items": [
-      {"type": "text", "content": "Energien beregnes med {{Q = m*c_vand*DeltaT}}, hvor temperaturforskellen er {{DeltaT = 45}} °C og den specifikke varmekapacitet er {{c_vand = 4180}} [[J/(kg*degC)]]."}
-    ]
-  }}
-]

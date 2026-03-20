@@ -13,6 +13,8 @@ __pycache__/
 *.txt
 /test_*.json
 /test_*.py
+*.json
+!pyproject.toml
 extracted_*
 tmp_*
 ahk_test.ahk

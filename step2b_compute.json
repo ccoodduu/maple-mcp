@@ -1,9 +1,0 @@
-[
-  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
-  {"tool": "execute", "args": {"statement": "int(3*x^2 + 2*x - 5, x);"}},
-  {"tool": "execute", "args": {"statement": "int(sin(x)*cos(x), x);"}},
-  {"tool": "execute", "args": {"statement": "int(x^2, x=0..3);"}},
-  {"tool": "execute", "args": {"statement": "solve(x^2 - 5*x + 6 = 0, x);"}},
-  {"tool": "execute", "args": {"statement": "solve(2*sin(x) = 1, x);"}},
-  {"tool": "execute", "args": {"statement": "evalf(arcsin(1/2));"}}
-]
