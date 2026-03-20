@@ -1,0 +1,27 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "insert_after", "args": {
+    "match": "c) Beregn {{∫03x^2x}}",
+    "items": [
+      {"type": "heading", "content": "Løsning", "level": 2},
+
+      {"type": "heading", "content": "a)", "level": 2},
+      {"type": "text", "content": "**Bestem integralet {{Int(3*x^2+2*x-5, x)}}.**"},
+      {"type": "text", "content": "Vi bruger stamfunktionsreglerne: {{Int(x^n, x) = (x^(n+1))/(n+1)}} og integrerer led for led."},
+      {"type": "code", "content": "int1a := int(3*x^2 + 2*x - 5, x)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: {{Int(3*x^2+2*x-5, x) = x^3+x^2-5*x+C}}**{/color}"},
+
+      {"type": "heading", "content": "b)", "level": 2},
+      {"type": "text", "content": "**Bestem integralet {{Int(sin(x)*cos(x), x)}}.**"},
+      {"type": "text", "content": "Vi anvender substitution med {{u = sin(x)}}, så {{du = cos(x)*dx}}. Integralet bliver {{Int(u, u) = (u^2)/(2)}}."},
+      {"type": "code", "content": "int1b := int(sin(x)*cos(x), x)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: {{Int(sin(x)*cos(x), x) = (1)/(2)*sin(x)^2+C}}**{/color}"},
+
+      {"type": "heading", "content": "c)", "level": 2},
+      {"type": "text", "content": "**Beregn det bestemte integral {{Int(x^2, x=0..3)}}.**"},
+      {"type": "text", "content": "Vi finder stamfunktionen {{F(x) = (x^3)/(3)}} og beregner {{F(3)-F(0)}}."},
+      {"type": "code", "content": "int1c := int(x^2, x=0..3)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: {{Int(x^2, x=0..3) = 9}}**{/color}"}
+    ]
+  }}
+]

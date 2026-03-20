@@ -1,0 +1,9 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "replace_block", "args": {
+    "match": "Vi bruger diskriminantformlen [CORRUPT EQUATION] med {{a=1}} , {{b=-5}} , {{c=6}} .",
+    "items": [
+      {"type": "text", "content": "Vi bruger diskriminantformlen med {{a = 1}}, {{b = -5}}, {{c = 6}} og beregner discriminanten {{D = b^2-4*a*c}}."}
+    ]
+  }}
+]

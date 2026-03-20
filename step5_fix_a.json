@@ -1,0 +1,20 @@
+[
+  {
+    "tool": "set_document_path",
+    "args": {"path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}
+  },
+  {
+    "tool": "replace_block",
+    "args": {
+      "match": "**Beregn massen af vandet**",
+      "items": [
+        {"type": "text", "content": "**Beregn massen af vandet.**"},
+        {"type": "text", "content": "Massen beregnes med formlen {{m = rho*V}}, hvor volumen {{V = 200/1000}} m³ (200 L omregnes til m³) og massefylden {{rho = 1000}} kg/m³."},
+        {"type": "code", "content": "rho := 1000"},
+        {"type": "code", "content": "V := 200/1000"},
+        {"type": "code", "content": "m := rho*V"},
+        {"type": "text", "content": "{color:255,255,0}**Svar: Massen af vandet er 200 kg.**{/color}"}
+      ]
+    }
+  }
+]

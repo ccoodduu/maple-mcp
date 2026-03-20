@@ -1,0 +1,19 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "insert_after", "args": {
+    "match": "2*sin(x)=1",
+    "section": "Opgave 2 - Ligninger",
+    "items": [
+      {"type": "heading", "content": "a)", "level": 2},
+      {"type": "text", "content": "**Løs andengradligningen {{x^2-5*x+6 = 0}}.**"},
+      {"type": "text", "content": "Vi faktoriserer: {{x^2-5*x+6 = (x-2)*(x-3)}} ⇔ {{x = 2}} eller {{x = 3}}."},
+      {"type": "code", "content": "sol_a := solve(x^2 - 5*x + 6 = 0, x)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: {{x = 2}} eller {{x = 3}}**{/color}"},
+      {"type": "heading", "content": "b)", "level": 2},
+      {"type": "text", "content": "**Løs ligningen {{2*sin(x) = 1}}.**"},
+      {"type": "text", "content": "Vi isolerer sinus: {{2*sin(x) = 1}} ⇔ {{sin(x) = 1/2}} ⇔ {{x = Pi/6+2*Pi*n}} eller {{x = 5*Pi/6+2*Pi*n}}."},
+      {"type": "code", "content": "sol_b := solve(2*sin(x) = 1, x)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: {{x = Pi/6+2*Pi*n}} eller {{x = 5*Pi/6+2*Pi*n}} for heltalsværdier af {{n}}**{/color}"}
+    ]
+  }}
+]

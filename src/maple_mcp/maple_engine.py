@@ -181,9 +181,28 @@ class MapleEngine:
 
         expr = expr.strip().rstrip(";:")
 
-        # := assignments lose the variable name in InertForm — use = for display
+        # := assignments: encode LHS and RHS separately, join with &coloneq;
         if ':=' in expr:
-            expr = expr.replace(':=', '=', 1)
+            lhs, rhs = expr.split(':=', 1)
+            lhs, rhs = lhs.strip(), rhs.strip()
+            # Encode as: mrow(LHS_typesetting, mo("&coloneq;"), RHS_typesetting)
+            raw = self._execute_clean(
+                f'local ts, lhs_ts, rhs_ts:\n'
+                f'lhs_ts := InertForm:-Typeset(InertForm:-Parse("{lhs}"), inert=false):\n'
+                f'lhs_ts := subsindets(lhs_ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
+                f'lhs_ts := subsindets(lhs_ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
+                f'rhs_ts := InertForm:-Typeset(InertForm:-Parse("{rhs}"), inert=false):\n'
+                f'rhs_ts := subsindets(rhs_ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
+                f'rhs_ts := subsindets(rhs_ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
+                f'ts := Typesetting:-mrow(lhs_ts, Typesetting:-mo("&coloneq;"), rhs_ts):\n'
+                f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
+                f' style=TwoDimInput, executable=true)));\n'
+            )
+            if 'Error' in raw or 'error' in raw:
+                self._last_encode_error = raw.strip()
+                return '', ''
+            content_b64 = ''.join(raw.split())
+            return content_b64, content_b64
 
         # Convert underscore subscripts to Maple bracket notation: c_p → c[p]
         expr = re.sub(r'\b([a-zA-Z])_([a-zA-Z0-9]+)\b', r'\1[\2]', expr)

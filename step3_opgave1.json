@@ -1,0 +1,8 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "insert_after", "args": {
+    "match": "c) Beregn {{∫03x^2x}}",
+    "content": "## a)\n**a) Bestem integralet {{Int(3*x^2 + 2*x - 5, x)}}**\nVi bruger standardreglerne for integration: {{Int(x^n, x) = (x^(n+1))/(n+1) + C}}. Vi integrerer hvert led for sig.\n{!int(3*x^2 + 2*x - 5, x)!}\n{color:255,255,0}**Svar: Integralet af {{3*x^2 + 2*x - 5}} er {{x^3 + x^2 - 5*x + C}}.**{/color}\n## b)\n**b) Bestem integralet {{Int(sin(x)*cos(x), x)}}**\nVi bruger substitution: lad {{u = sin(x)}}, så {{du = cos(x)*dx}}. Derved fås {{Int(u, u) = (u^2)/(2) + C}}.\n{!int(sin(x)*cos(x), x)!}\n{color:255,255,0}**Svar: Integralet af {{sin(x)*cos(x)}} er {{(1)/(2)*sin(x)^2 + C}}.**{/color}\n## c)\n**c) Beregn det bestemte integral {{Int(x^2, x = 0..3)}}**\nVi anvender analysens fundamentalsætning: {{Int(x^2, x = 0..3) = [(x^3)/(3)]_(x=0)^(x=3)}}. Vi indsætter grænserne.\n{!int(x^2, x=0..3)!}\n{color:255,255,0}**Svar: Det bestemte integral {{Int(x^2, x = 0..3)}} er lig med 9.**{/color}"
+  }},
+  {"tool": "read_document", "args": {}}
+]

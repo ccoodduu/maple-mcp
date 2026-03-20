@@ -1,0 +1,33 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "insert_after", "args": {
+    "match": "c) Hvis P = 2000 W, hvor lang tid tager det?",
+    "items": [
+      {"type": "heading", "content": "Løsning", "level": 2},
+
+      {"type": "heading", "content": "a)", "level": 2},
+      {"type": "text", "content": "**Beregn massen af vandet.**"},
+      {"type": "text", "content": "Massen beregnes med {{m = rho*V}}, hvor volumenet er {{V = (200)/(1000)}} [[m^3]] og massefylden er {{rho = 1000}} [[kg/m^3]]."},
+      {"type": "code", "content": "rho := 1000"},
+      {"type": "code", "content": "V := 200/1000"},
+      {"type": "code", "content": "m := rho*V"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Massen af de 200 L vand er {{m = 200}} [[kg]].**{/color}"},
+
+      {"type": "heading", "content": "b)", "level": 2},
+      {"type": "text", "content": "**Beregn energien til opvarmning af vandet.**"},
+      {"type": "text", "content": "Energien beregnes med {{Q = m*c*DeltaT}}, hvor {{DeltaT = 60-15 = 45}} °C og {{c = 4180}} [[J/(kg*degC)]]."},
+      {"type": "code", "content": "c_vand := 4180"},
+      {"type": "code", "content": "DeltaT := 60 - 15"},
+      {"type": "code", "content": "Q := m*c_vand*DeltaT"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Energien til opvarmning er {{Q = 37620000}} [[J]] = 37,62 [[MJ]].**{/color}"},
+
+      {"type": "heading", "content": "c)", "level": 2},
+      {"type": "text", "content": "**Beregn tiden for opvarmning med effekt {{P = 2000}} [[W]].**"},
+      {"type": "text", "content": "Tiden beregnes med {{t = (Q)/(P)}}, hvor {{Q = 37620000}} [[J]] og {{P = 2000}} [[W]]."},
+      {"type": "code", "content": "P := 2000"},
+      {"type": "code", "content": "t_sekunder := Q/P"},
+      {"type": "code", "content": "t_timer := t_sekunder/3600"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Det tager {{t = 18810}} [[s]] ≈ 5,225 timer at opvarme vandet.**{/color}"}
+    ]
+  }}
+]

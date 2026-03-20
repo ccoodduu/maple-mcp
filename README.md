@@ -112,7 +112,6 @@ __underline__         underlined text
 |-----------|-------------|-----|
 | `DeltaT` | ΔT | Greek prefix + uppercase letter |
 | `c_p` | c with subscript p | Underscore → bracket subscript |
-| `:=` | = | Assignment displays as equation |
 | `1000 [[kg]]` | 1000 ⟦kg⟧ | Space before unit auto-normalized |
 
 ### Examples

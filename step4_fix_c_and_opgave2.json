@@ -1,0 +1,26 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "replace_block", "args": {
+    "match": "**c) Beregn det bestemte integral {{∫03x^2x}}** Vi anvender analysens fundamentalsætning. Stamfunktionen til {{x^2}} er {{(x^3)/(3)}} . Vi evaluerer: {{Error: Error, (in sscanf) invalid POLY dag length}} .",
+    "items": [
+      {"type": "text", "content": "**c) Beregn det bestemte integral {{Int(x^2, x = 0..3)}}**\nVi anvender analysens fundamentalsætning. Stamfunktionen til {{x^2}} er {{(x^3)/(3)}}. Vi evaluerer fra 0 til 3: {{(3^3)/(3) - (0^3)/(3) = 9 - 0}}, som giver 9."}
+    ],
+    "section": "# Opgave 1 - Integralregning"
+  }},
+  {"tool": "insert_after", "args": {
+    "match": "b) {{2*sin(x)=1}}",
+    "items": [
+      {"type": "heading", "content": "a)", "level": 2},
+      {"type": "text", "content": "**a) Løs ligningen {{x^2 - 5*x + 6 = 0}}**\nVi bruger diskriminantformlen eller faktorisering. Ligningen kan faktoriseres som {{(x - 2)*(x - 3) = 0}}, hvilket giver to løsninger: {{x = 2}} eller {{x = 3}}."},
+      {"type": "code", "content": "solve(x^2 - 5*x + 6 = 0, x)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Ligningen {{x^2 - 5*x + 6 = 0}} har løsningerne x = 2 og x = 3.**{/color}"},
+      {"type": "heading", "content": "b)", "level": 2},
+      {"type": "text", "content": "**b) Løs ligningen {{2*sin(x) = 1}}**\nVi isolerer sinus: {{sin(x) = (1)/(2)}}. Den generelle løsning er {{x = (Pi)/(6) + 2*k*Pi}} eller {{x = Pi - (Pi)/(6) + 2*k*Pi}}, hvor k er et heltal. Bemærk: Maple returnerer den primære løsning."},
+      {"type": "code", "content": "solve(2*sin(x) = 1, x)"},
+      {"type": "text", "content": "Den numeriske værdi af den primære løsning:"},
+      {"type": "code", "content": "evalf(arcsin(1/2))"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Ligningen {{2*sin(x) = 1}} har løsningen {{x = Pi/6}} (ca. 0,5236 rad eller 30°), plus alle periodiske løsninger.**{/color}"}
+    ]
+  }},
+  {"tool": "read_document", "args": {}}
+]

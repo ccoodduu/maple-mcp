@@ -1,0 +1,26 @@
+[
+  {
+    "tool": "set_document_path",
+    "args": {"path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}
+  },
+  {
+    "tool": "delete_block",
+    "args": {
+      "match": "## b)",
+      "section": "# Opgave 3 - Fysik",
+      "delete_section": true
+    }
+  },
+  {
+    "tool": "delete_block",
+    "args": {
+      "match": "## c)",
+      "section": "# Opgave 3 - Fysik",
+      "delete_section": true
+    }
+  },
+  {
+    "tool": "read_document",
+    "args": {}
+  }
+]

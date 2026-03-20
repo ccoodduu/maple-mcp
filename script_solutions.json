@@ -1,0 +1,50 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+
+  {"tool": "insert_after", "args": {
+    "match": "  a) {{∫3*x2+2*x−5x}}",
+    "content": "  Løsning a): Vi integrerer led for led:\n  {!Int(3*x^2+2*x-5, x)!}\n  {color:255,255,0}**Svar: {{(3*x^2+2*x-5)}} integreret giver {{x^3+x^2-5*x+C}}.**{/color}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  b) {{∫sin(x)*cos(x)x}}",
+    "content": "  Løsning b): Vi bruger substitution u = sin(x):\n  {!Int(sin(x)*cos(x), x)!}\n  {color:255,255,0}**Svar: {{∫sin(x)*cos(x)dx}} giver {{(1)/(2)*sin(x)^2+C}}.**{/color}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  c) Beregn {{∫03x^2x}}",
+    "content": "  Løsning c): Vi beregner det bestemte integral:\n  {!Int(x^2, x=0..3)!}\n  {color:255,255,0}**Svar: {{∫₀³ x²dx}} giver {{9}}.**{/color}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  a) {{x^2−5*x+6=0}}",
+    "content": "  Løsning a): Vi løser den kvadratiske ligning:\n  {!solve(x^2-5*x+6, x)!}\n  {color:255,255,0}**Svar: {{x^2-5*x+6=0}} har løsningerne {{x=2}} og {{x=3}}.**{/color}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  b) {{2*sin(x)=1}}",
+    "content": "  Løsning b): Vi isolerer sin(x) og finder vinklerne:\n  {!solve(2*sin(x)=1, x)!}\n  {color:255,255,0}**Svar: {{2*sin(x)=1}} giver {{x=(1)/(6)*Pi+2*Pi*n}} eller {{x=(5)/(6)*Pi+2*Pi*n}}.**{/color}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  Givet: {{c=4180*((J)/(kg⋅°C))}} og {{ρ=1000*((kg)/(m^3))}}",
+    "content": "  Vi noterer også: {{V=200*[[L]]}} ⇔ {{V=0.2*[[m^3]]}}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  a) Beregn massen af vandet.",
+    "content": "  Løsning a): Masse beregnes som {{m=ρ*V}}:\n  {!m = 1000*[[kg/m^3]]*0.2*[[m^3]]!}\n  {color:255,255,0}**Svar: Massen af vandet er {{m=200*[[kg]]}}.**{/color}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  b) Beregn energien til opvarmning.",
+    "content": "  Løsning b): Energien beregnes som {{Q=m*c*ΔT}} hvor {{ΔT=45*[[degC]]}}:\n  {!Q = 200*[[kg]]*4180*[[J/(kg*degC)]]*45*[[degC]]!}\n  {color:255,255,0}**Svar: Energien til opvarmning er {{Q=37620000*[[J]]}}.**{/color}"
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  c) Hvis P = 2000 W, hvor lang tid tager det?",
+    "content": "  Løsning c): Tid beregnes som {{t=(Q)/(P)}}:\n  {!t = (37620000*[[J]])/(2000*[[W]])!}\n  {color:255,255,0}**Svar: Det tager {{t=18810*[[s]]}} ≈ {{t=5.225*[[h]]}}.**{/color}"
+  }},
+
+  {"tool": "read_document", "args": {}}
+]

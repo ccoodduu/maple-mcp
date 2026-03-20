@@ -1,0 +1,84 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+
+  {"tool": "insert_after", "args": {
+    "match": "  a) {{∫3*x2+2*x−5x}}",
+    "items": [
+      {"type": "text", "content": "  Løsning a): Vi integrerer led for led ved brug af potensreglen:"},
+      {"type": "code", "content": "Int(3*x^2+2*x-5, x)"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: {{Int(3*x^2+2*x-5,x)}} giver {{x^3+x^2-5*x+C}}.**{/color}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  b) {{∫sin(x)*cos(x)x}}",
+    "items": [
+      {"type": "text", "content": "  Løsning b): Vi bruger substitution {{u=sin(x)}}, så {{du=cos(x)*dx}}:"},
+      {"type": "code", "content": "Int(sin(x)*cos(x), x)"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: {{Int(sin(x)*cos(x),x)}} giver {{(1)/(2)*sin(x)^2+C}}.**{/color}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  c) Beregn {{∫03x^2x}}",
+    "items": [
+      {"type": "text", "content": "  Løsning c): Vi beregner det bestemte integral fra 0 til 3:"},
+      {"type": "code", "content": "Int(x^2, x=0..3)"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: {{Int(x^2,x=0..3)}} giver {{9}}.**{/color}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  a) {{x^2−5*x+6=0}}",
+    "items": [
+      {"type": "text", "content": "  Løsning a): Vi løser den kvadratiske ligning ved faktorisering:"},
+      {"type": "code", "content": "solve(x^2-5*x+6, x)"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: {{x^2-5*x+6=0}} har løsningerne {{x=2}} og {{x=3}}.**{/color}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  b) {{2*sin(x)=1}}",
+    "items": [
+      {"type": "text", "content": "  Løsning b): Vi isolerer sinus og finder vinklerne i intervallet {{[0,2*Pi]}}:"},
+      {"type": "code", "content": "solve(2*sin(x)=1, x)"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: {{2*sin(x)=1}} giver {{x=(Pi)/(6)}} og {{x=(5*Pi)/(6)}} plus hele omgange.**{/color}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  Givet: {{c=4180*((J)/(kg⋅°C))}} og {{ρ=1000*((kg)/(m^3))}}",
+    "items": [
+      {"type": "text", "content": "  Volumenet er {{V=200*[[L]]}} ⇔ {{V=0.2*[[m^3]]}}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  a) Beregn massen af vandet.",
+    "items": [
+      {"type": "text", "content": "  Løsning a): Massen beregnes med {{m=rho*V}}, hvor {{rho=1000*[[kg/m^3]]}} og {{V=0.2*[[m^3]]}}:"},
+      {"type": "code", "content": "m = 1000*[[kg/m^3]]*0.2*[[m^3]]"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: Massen af vandet er {{m=200*[[kg]]}}.**{/color}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  b) Beregn energien til opvarmning.",
+    "items": [
+      {"type": "text", "content": "  Løsning b): Energien beregnes med {{Q=m*c*Delta*T}}, hvor temperaturforskellen er {{Delta*T=45*[[degC]]}}:"},
+      {"type": "code", "content": "Q = 200*[[kg]]*4180*[[J/(kg*degC)]]*45*[[degC]]"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: Energien til opvarmning er {{Q=37620000*[[J]]}}.**{/color}"}
+    ]
+  }},
+
+  {"tool": "insert_after", "args": {
+    "match": "  c) Hvis P = 2000 W, hvor lang tid tager det?",
+    "items": [
+      {"type": "text", "content": "  Løsning c): Tiden beregnes med {{t=(Q)/(P)}}, hvor {{P=2000*[[W]]}}:"},
+      {"type": "code", "content": "t = (37620000*[[J]])/(2000*[[W]])"},
+      {"type": "text", "content": "  {color:255,255,0}**Svar: Det tager {{t=18810*[[s]]}} ≈ {{t=5.225*[[h]]}}.**{/color}"}
+    ]
+  }},
+
+  {"tool": "read_document", "args": {}}
+]

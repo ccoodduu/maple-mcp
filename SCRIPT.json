@@ -1,0 +1,25 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "insert_after", "args": {
+    "match": "c) Hvis P = 2000 W, hvor lang tid tager det?",
+    "items": [
+      {"type": "heading", "content": "a)", "level": 2},
+      {"type": "text", "content": "**Beregn massen af vandet.**"},
+      {"type": "text", "content": "Massen beregnes med {{m = rho*V}}, hvor {{rho = 1000*[[kg/m^3]]}} og {{V = (200)/(1000)*[[m^3]]}}."},
+      {"type": "code", "content": "m = 1000*[[kg/m^3]]*200/1000*[[m^3]]"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Massen af de 200 L vand er {{m = 200*[[kg]]}}.**{/color}"},
+      {"type": "empty"},
+      {"type": "heading", "content": "b)", "level": 2},
+      {"type": "text", "content": "**Beregn energien til opvarmning.**"},
+      {"type": "text", "content": "Energien beregnes med {{Q = m*c*Delta*T}}, hvor {{c = 4180*[[J/(kg*degC)]]}} og {{Delta*T = 45*[[degC]]}}."},
+      {"type": "code", "content": "Q = 200*[[kg]]*4180*[[J/(kg*degC)]]*45*[[degC]]"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Energien til opvarmning er {{Q = 37620000*[[J]]}} svarende til {{37.62*[[MJ]]}}.**{/color}"},
+      {"type": "empty"},
+      {"type": "heading", "content": "c)", "level": 2},
+      {"type": "text", "content": "**Hvis P = 2000 W, hvor lang tid tager det?**"},
+      {"type": "text", "content": "Tiden beregnes fra {{P = (Q)/(t)}}, isoleret: {{t = (Q)/(P)}}."},
+      {"type": "code", "content": "t = (37620000*[[J]])/(2000*[[W]])"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Det tager {{t = 18810*[[s]]}} at opvarme vandet, svarende til ca. 5 timer og 14 minutter.**{/color}"}
+    ]
+  }}
+]

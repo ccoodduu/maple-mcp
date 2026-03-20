@@ -1,0 +1,303 @@
+[
+  {
+    "name": "set_document_path",
+    "description": "Set the path to the Maple document you're working on.\n\nIf no path is given, automatically detects the currently open\ndocument from Maple's window title.\n\nArgs:\n    file_path: Full path to the .mw file, or None for auto-detect\n",
+    "input_schema": {
+      "properties": {
+        "file_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File Path"
+        }
+      },
+      "title": "set_document_pathArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "read_document",
+    "description": "Read the current Maple document.\n\nAuto-saves the document first, then returns the content as\nindented text showing section hierarchy:\n  # Section        (level 1)\n    text block     (inside section)\n    ## Subsection  (level 2)\n      text block   (inside subsection)\n\nEquations show as {{expr}}, executable as {!expr!},\nhighlights as {color:R,G,B}text{/color}.\nImages are returned as inline image content.\n\nArgs:\n    start: First block to read (default: 0)\n    end: Block to stop at (exclusive). None = read to end.\n",
+    "input_schema": {
+      "properties": {
+        "start": {
+          "default": 0,
+          "title": "Start",
+          "type": "integer"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End"
+        }
+      },
+      "title": "read_documentArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "execute",
+    "description": "Execute a Maple statement and return the result.\n\nPersistent session — variables are preserved between calls.\nDoes NOT modify the document.\n\nArgs:\n    statement: Maple expression (e.g. \"int(x^2, x)\", \"solve(x^2-1, x)\")\n",
+    "input_schema": {
+      "properties": {
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        }
+      },
+      "required": [
+        "statement"
+      ],
+      "title": "executeArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "insert_after",
+    "description": "Insert content after a matched block.\n\nFinds a block containing the match text and inserts new content after it.\n\nMATCHING: Copy a long, unique substring (15+ chars) directly from\nread_document output. Never use short generic matches like \"a)\"\nor \"sin\". For section headings, include the # prefix (e.g. \"## b)\"\ninstead of \"b)\").\n\nSECTION HEADING vs TEXT BLOCK:\n- Match a section heading (e.g. \"## b)\") → inserts AFTER the\n  entire section including all its children.\n- Match a text block → inserts after just that block, inside\n  the same parent.\nTo insert INSIDE an existing section, match a text block within\nit — not the heading.\n\nEach item is a dict with 'type' and 'content':\n  - {\"type\": \"text\", \"content\": \"Text with {{inline_math}} and **bold**\"}\n  - {\"type\": \"code\", \"content\": \"solve(x^2-1, x)\"}\n  - {\"type\": \"heading\", \"content\": \"Section Title\", \"level\": 1}\n  - {\"type\": \"image\", \"path\": \"C:/path/to/image.png\"}\n\nThis is a Maple Document mode editor. There are NO code blocks.\nType \"code\" creates a single executable 2D Math equation.\nFor multiple statements, use multiple {\"type\": \"code\"} items.\n\nFormatting in text content (MAPLE syntax, NOT LaTeX):\n  {{expr}}  - non-executable inline 2D Math\n  {!expr!}  - executable 2D Math, output below\n  {=expr=}  - executable 2D Math, inline output\n  **bold**  *italic*  __underline__\n  {color:R,G,B}text{/color}  - highlight background\n  [[unit]]  - Maple unit in equations\n\nIMPORTANT RULES:\n- Use MAPLE syntax in equations, NOT LaTeX!\n- ALL math must use {{}} — never write math as plain text.\n  WRONG: \"x^2 - 5*x + 6 = 0\"\n  RIGHT: \"{{x^2 - 5*x + 6 = 0}}\"\n- Equations are NOT evaluated, they display exactly what you write.\n- **bold** markers must always be balanced (opening AND closing).\n- Keep {color:R,G,B} blocks simple — one block per answer line,\n  not many fragments.\nCRITICAL: Each {{}} must contain at most ONE = sign.\n{{a = b = c}} WILL FAIL and show as raw text.\nWRONG: {{x = Pi - Pi/6 = 5*Pi/6}}\nRIGHT: {{x = Pi - Pi/6}} ⇔ {{x = 5*Pi/6}}\n\nSafe equation examples:\n  {{x^2 + 3*x - 4}}          - polynomial\n  {{int(x^2, x)}}            - integral symbol\n  {{Int(x^2, x = 0..3)}}     - definite integral with limits\n  {{solve(x^2 - 1, x)}}      - solve expression\n  {{f(x) = cos(x)}}          - equality\n  {{3*4}}                     - shows 3·4 (not evaluated to 12)\n  {{a/b + c/d}}               - fractions\n  {{500*[[Omega]]}}           - with unit\n  {{4180*[[J/(kg*degC)]]}}    - compound unit\n\nHighlight with equations:\n  {color:255,255,0}**Svar: {{x = 42}}**{/color}\n  → yellow highlighted bold text with inline equation\n\nArgs:\n    match: Text substring to find the target block\n    items: Content blocks to insert\n    section: Scope search to blocks inside this section title\n    occurrence: Which match to use if multiple (1-based)\n",
+    "input_schema": {
+      "properties": {
+        "match": {
+          "title": "Match",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "occurrence": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Occurrence"
+        }
+      },
+      "required": [
+        "match",
+        "items"
+      ],
+      "title": "insert_afterArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "insert_before",
+    "description": "Insert content before a matched block.\n\nSame as insert_after but inserts BEFORE the matched block.\nMatching a section heading inserts before the entire section.\n\nArgs:\n    match: Text substring to find the target block\n    items: Content blocks to insert\n    section: Scope search to blocks inside this section title\n    occurrence: Which match to use if multiple (1-based)\n",
+    "input_schema": {
+      "properties": {
+        "match": {
+          "title": "Match",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "occurrence": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Occurrence"
+        }
+      },
+      "required": [
+        "match",
+        "items"
+      ],
+      "title": "insert_beforeArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "replace_block",
+    "description": "Replace a matched block with new content.\n\nSAFETY: Refuses to replace a section that has children.\nMatch a specific block inside the section instead.\nA .mw.bak backup is created before every edit.\n\nArgs:\n    match: Text substring to find the block to replace\n    items: New content blocks (same format as insert_after)\n    section: Scope search to blocks inside this section title\n    occurrence: Which match to use if multiple (1-based)\n",
+    "input_schema": {
+      "properties": {
+        "match": {
+          "title": "Match",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "occurrence": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Occurrence"
+        }
+      },
+      "required": [
+        "match",
+        "items"
+      ],
+      "title": "replace_blockArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_block",
+    "description": "Delete a matched block.\n\nSAFETY: If the match hits a section heading, this will REFUSE to\ndelete (to prevent accidentally removing an entire section with\nall its content). Set delete_section=True to explicitly confirm.\n\nArgs:\n    match: Text substring to find the block to delete\n    section: Scope search to blocks inside this section title\n    occurrence: Which match to use if multiple (1-based)\n    delete_section: Must be True to delete an entire section\n",
+    "input_schema": {
+      "properties": {
+        "match": {
+          "title": "Match",
+          "type": "string"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "occurrence": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Occurrence"
+        },
+        "delete_section": {
+          "default": false,
+          "title": "Delete Section",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "match"
+      ],
+      "title": "delete_blockArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "append_content",
+    "description": "Append content at the end of the document.\n\nSupports nested sections: use type \"heading\" to create sections.\nSub-headings (higher level number) nest inside parent sections.\n\nArgs:\n    items: Content blocks to append (same format as insert_after)\n",
+    "input_schema": {
+      "properties": {
+        "items": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items"
+      ],
+      "title": "append_contentArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "undo",
+    "description": "Undo the last edit (any insert, replace, or delete operation).\n\nRestores the document from the .mw.bak backup file.\nA backup is created before every edit operation.\n",
+    "input_schema": {
+      "properties": {},
+      "title": "undoArguments",
+      "type": "object"
+    }
+  },
+  {
+    "name": "screenshot_maple",
+    "description": "Take a screenshot of the Maple window to verify document rendering.\n\nUse this after editing to visually check that equations, units,\nformatting, and layout rendered correctly in Maple.\nReturns the screenshot as an image.\n",
+    "input_schema": {
+      "properties": {},
+      "title": "screenshot_mapleArguments",
+      "type": "object"
+    }
+  }
+]

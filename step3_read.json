@@ -1,0 +1,10 @@
+[
+  {
+    "tool": "set_document_path",
+    "args": {"path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}
+  },
+  {
+    "tool": "read_document",
+    "args": {}
+  }
+]

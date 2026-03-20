@@ -1,0 +1,21 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "insert_after", "args": {
+    "match": "b) {{2*sin(x)=1}}",
+    "items": [
+      {"type": "heading", "content": "Løsning", "level": 2},
+
+      {"type": "heading", "content": "a)", "level": 2},
+      {"type": "text", "content": "**Løs ligningen {{x^2-5*x+6 = 0}}.**"},
+      {"type": "text", "content": "Vi bruger diskriminantformlen {{x = (-b+-sqrt(b^2-4*a*c))/(2*a)}} med {{a = 1}}, {{b = -5}}, {{c = 6}}."},
+      {"type": "code", "content": "sol2a := solve(x^2 - 5*x + 6 = 0, x)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: Løsningerne er {{x = 2}} og {{x = 3}}.**{/color}"},
+
+      {"type": "heading", "content": "b)", "level": 2},
+      {"type": "text", "content": "**Løs ligningen {{2*sin(x) = 1}}.**"},
+      {"type": "text", "content": "Vi isolerer {{sin(x) = (1)/(2)}} og finder alle løsninger med {{x = arcsin((1)/(2))+2*Pi*n}} og {{x = Pi-arcsin((1)/(2))+2*Pi*n}}."},
+      {"type": "code", "content": "sol2b := solve(2*sin(x) = 1, x)"},
+      {"type": "text", "content": "{color:255,255,0}**Svar: {{x = (1)/(6)*Pi+2*Pi*n}} eller {{x = (5)/(6)*Pi+2*Pi*n}} for heltal {{n}}.**{/color}"}
+    ]
+  }}
+]

@@ -1,0 +1,10 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "replace_block", "args": {
+    "match": "Vi bruger formlen",
+    "section": "Opgave 3 - Fysik",
+    "items": [
+      {"type": "text", "content": "Vi bruger formlen {{Q = m*c*DeltaT}}, hvor temperaturforskellen er {{DeltaT = 45}} °C (fra 15 til 60 °C) og {{c = 4180}} J/(kg·°C)."}
+    ]
+  }}
+]

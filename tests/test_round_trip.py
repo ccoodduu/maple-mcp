@@ -52,11 +52,12 @@ class TestEquationRoundTrip:
         )
 
     def test_assignment_shows_variable(self, engine):
-        """':=' should display like '=' (not strip variable name)."""
+        """':=' should preserve variable name with coloneq operator."""
         _, b64 = engine.encode_equation("m := 200")
         decoded = engine.decode_equation(b64)
         assert "m" in decoded, f"Variable name lost: {decoded}"
         assert "200" in decoded, f"Value lost: {decoded}"
+        assert "≔" in decoded or ":=" in decoded, f"Assignment operator lost: {decoded}"
 
 
 class TestUnitSyntaxNormalization:

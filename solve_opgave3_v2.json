@@ -1,0 +1,30 @@
+[
+  {"tool": "set_document_path", "args": {"file_path": "C:/Users/willi/Downloads/mcp_test_assignment.mw"}},
+  {"tool": "insert_after", "args": {
+    "match": "c) Hvis P = 2000 W, hvor lang tid tager det?",
+    "items": [
+      {"type": "heading", "content": "a)", "level": 2},
+      {"type": "text", "content": "**Beregn massen af vandet**"},
+      {"type": "text", "content": "Massen beregnes ved hjælp af formlen {{m = rho*V}}, hvor rumfanget er {{V = 0.200*[[m^3]]}} (200 L). Med massefylden {{rho = 1000*[[kg/m^3]]}} fås massen direkte:"},
+      {"type": "code", "content": "rho := 1000"},
+      {"type": "code", "content": "V := 0.200"},
+      {"type": "code", "content": "m := rho*V"},
+      {"type": "text", "content": "{color:255,255,0}Massen af 200 L vand er {{m = 200*[[kg]]}}, beregnet som produktet af massefylde og rumfang.{/color}"},
+      {"type": "empty"},
+      {"type": "heading", "content": "b)", "level": 2},
+      {"type": "text", "content": "**Beregn energien til opvarmning**"},
+      {"type": "text", "content": "Energien beregnes med formlen {{Q = m*c*DT}}, hvor temperaturforskellen er {{DT = 45*[[degC]]}} (fra 15 til 60 grader) og varmekapaciteten er {{c = 4180*[[J/(kg*degC)]]}}:"},
+      {"type": "code", "content": "c := 4180"},
+      {"type": "code", "content": "DT := 60-15"},
+      {"type": "code", "content": "Q := m*c*DT"},
+      {"type": "text", "content": "{color:255,255,0}Energien til opvarmning af 200 L vand fra 15 til 60 grader er {{Q = 37620000*[[J]]}} (ca. 37,6 MJ).{/color}"},
+      {"type": "empty"},
+      {"type": "heading", "content": "c)", "level": 2},
+      {"type": "text", "content": "**Beregn opvarmningstiden ved {{P = 2000*[[W]]}}**"},
+      {"type": "text", "content": "Sammenhængen mellem effekt, energi og tid er {{P = Q/t}}, som omskrives til {{t = Q/P}}. Med {{P = 2000*[[W]]}} og energien {{Q}} fra delopgave b):"},
+      {"type": "code", "content": "P := 2000"},
+      {"type": "code", "content": "t := Q/P"},
+      {"type": "text", "content": "{color:255,255,0}Med en effekt på {{P = 2000*[[W]]}} tager det {{t = 18810*[[s]]}} (ca. 5,2 timer) at opvarme de 200 L vand fra 15 til 60 grader.{/color}"}
+    ]
+  }}
+]

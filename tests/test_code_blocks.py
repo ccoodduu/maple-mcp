@@ -33,7 +33,7 @@ class TestCodeBlockEncoding:
         assert "[[" in contents, f"Units lost in code block: {contents}"
 
     def test_code_block_assignment_display(self, tmp_mw, engine):
-        """:= should display as = (not strip variable name)."""
+        """:= should preserve variable name with coloneq operator."""
         from maple_mcp.document import insert_after, read_document
         insert_after(tmp_mw, "First block", [
             {"type": "code", "content": "m := 200"},
@@ -41,6 +41,7 @@ class TestCodeBlockEncoding:
         entries = read_document(tmp_mw)
         contents = " ".join(e.get("content", "") for e in entries)
         assert "m" in contents, f"Variable lost in := assignment: {contents}"
+        assert "200" in contents, f"Value lost in := assignment: {contents}"
 
     def test_code_block_fraction(self, tmp_mw, engine):
         from maple_mcp.document import insert_after, read_document
