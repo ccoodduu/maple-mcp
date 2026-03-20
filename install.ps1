@@ -1,7 +1,6 @@
 # Maple MCP Server - Installation Script
 # Run: powershell -ExecutionPolicy Bypass -File install.ps1
 
-$ErrorActionPreference = "Stop"
 $MapleRoot = "C:\Program Files\Maple 2025"
 $ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ClaudeConfig = "$env:APPDATA\Claude\claude_desktop_config.json"
@@ -27,14 +26,14 @@ Write-Host "[OK] Python found: $($python.Source)" -ForegroundColor Green
 $uv = Get-Command uv -ErrorAction SilentlyContinue
 if (-not $uv) {
     Write-Host "Installing uv..." -ForegroundColor Yellow
-    pip install uv
+    & pip install uv 2>$null
 }
 Write-Host "[OK] uv available" -ForegroundColor Green
 
 # 4. Install package
 Write-Host "Installing maple-mcp..." -ForegroundColor Yellow
 Push-Location $ProjectDir
-pip install -e . 2>&1 | Out-Null
+& pip install -e . 2>$null
 Pop-Location
 Write-Host "[OK] maple-mcp installed" -ForegroundColor Green
 
@@ -59,8 +58,6 @@ if (Test-Path $launchIni) {
 # 6. Add to Claude Desktop config
 if (Test-Path $ClaudeConfig) {
     $config = Get-Content $ClaudeConfig -Raw | ConvertFrom-Json
-    $projectDirEscaped = $ProjectDir -replace '\\', '\\\\'
-
     if ($config.mcpServers.maple) {
         Write-Host "[OK] maple already in Claude Desktop config" -ForegroundColor Green
     } else {
@@ -85,8 +82,8 @@ if (Test-Path $ClaudeConfig) {
 # 7. Run tests
 Write-Host "`nRunning tests..." -ForegroundColor Yellow
 Push-Location $ProjectDir
-pip install pytest -q 2>&1 | Out-Null
-python -m pytest tests/ -q 2>&1
+& pip install pytest -q 2>$null
+& python -m pytest tests/ -q
 Pop-Location
 
 Write-Host "`n=== Installation Complete ===" -ForegroundColor Cyan
