@@ -185,6 +185,9 @@ class MapleEngine:
         if ':=' in expr:
             expr = expr.replace(':=', '=', 1)
 
+        # Convert underscore subscripts to Maple bracket notation: c_p → c[p]
+        expr = re.sub(r'\b([a-zA-Z])_([a-zA-Z0-9]+)\b', r'\1[\2]', expr)
+
         def _greek_subs_code():
             """Generate Maple subs() to convert DeltaX → ΔX variable names."""
             import re as _re
