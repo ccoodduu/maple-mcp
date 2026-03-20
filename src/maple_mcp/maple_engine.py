@@ -491,6 +491,7 @@ end proc:
         # Remove invisible Unicode characters
         result = result.replace('\u2061', '')   # ApplyFunction
         result = result.replace('\u2062', '*')  # InvisibleTimes → *
+        result = result.replace('\u2254', ':=')  # coloneq → :=
         result = result.replace('\u2146', '')   # DifferentialD
         result = result.replace('\u2145', '')   # DoubleStruckCapitalD
         result = result.replace('  ', ' ')
