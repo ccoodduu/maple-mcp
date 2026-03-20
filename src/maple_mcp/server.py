@@ -19,22 +19,13 @@ def _get_path() -> Path | str:
     return "No document set. Use set_document_path first."
 
 
-_needs_save = True
-
 
 def _save_and_edit(edit_fn) -> str:
-    global _needs_save
     path = _get_path()
     if isinstance(path, str):
         return path
 
-    if _needs_save:
-        save_in_maple()
-        _needs_save = False
-
     readback = edit_fn(str(path))
-
-    # Fire-and-forget reload - LLM continues immediately
     reload_in_maple(str(path))
 
     if readback:
@@ -147,7 +138,6 @@ def read_document(start: int = 0, end: int | None = None) -> list[TextContent | 
         return path
 
     save_in_maple()
-
     entries = document.read_document(str(path), start, end)
     if not entries:
         return "Document is empty."
@@ -281,13 +271,9 @@ def delete_block(match: str, section: str | None = None,
         occurrence: Which match to use if multiple (1-based)
         delete_section: Must be True to delete an entire section
     """
-    global _needs_save
     path = _get_path()
     if isinstance(path, str):
         return path
-    if _needs_save:
-        save_in_maple()
-        _needs_save = False
     document.delete_block(str(path), match, section, occurrence, delete_section)
     reload_in_maple(str(path))
     return "Done."
