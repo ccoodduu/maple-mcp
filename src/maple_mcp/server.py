@@ -51,9 +51,20 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
             _flush_text()
             try:
                 png_data = decode_maple_image(entry["encoded"])
-                b64 = base64.b64encode(png_data).decode("ascii")
+                # Compress: downscale large images, convert to JPEG
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(png_data))
+                max_width = 800
+                if img.size[0] > max_width:
+                    ratio = max_width / img.size[0]
+                    img = img.resize(
+                        (max_width, int(img.size[1] * ratio)), Image.LANCZOS)
+                buf = io.BytesIO()
+                img.convert("RGB").save(buf, format="JPEG", quality=70)
+                b64 = base64.b64encode(buf.getvalue()).decode("ascii")
                 result.append(ImageContent(
-                    type="image", data=b64, mimeType="image/png"
+                    type="image", data=b64, mimeType="image/jpeg"
                 ))
             except Exception:
                 text_lines.append(f"{indent}[IMAGE: decode failed]")
