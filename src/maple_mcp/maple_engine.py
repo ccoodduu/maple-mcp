@@ -220,7 +220,7 @@ class MapleEngine:
             """Generate Maple subs() to convert DeltaX → ΔX variable names."""
             import re as _re
             names = set()
-            for m in _re.finditer(r'\bDelta([A-Z])\b', expr):
+            for m in _re.finditer(r'\bDelta([A-Za-z])\b', expr):
                 full = m.group(0)    # e.g. "DeltaT"
                 letter = m.group(1)  # e.g. "T"
                 names.add((full, f"&Delta;{letter}"))
@@ -415,6 +415,10 @@ class MapleEngine:
           f'(x)         -> fPRIMESENT(x)
         Both are turned back into proper Typesetting by _notation_fixup().
         """
+        import re
+        # Delta*X -> DeltaX so the Greek machinery renders a compound 'change in'
+        # symbol (ΔT, Δx) rather than Delta·X with a multiplication dot.
+        expr = re.sub(r'Delta\*([A-Za-z])\b', r'Delta\1', expr)
         expr = expr.replace('+/-', ' &pm ').replace('+-', ' &pm ')
         # Mark derivative primes WITHOUT mangling Maple single-quoted strings
         # such as Unit('Omega') (whose closing quote also follows a letter).
@@ -443,7 +447,8 @@ class MapleEngine:
             f'else x end if end proc):\n'
             f'{var} := subsindets({var}, specfunc(Typesetting:-mi), proc(x) local s; s := op(1,x); '
             f'if type(s, string) and StringTools:-IsSuffix("PRIMESENT", s) then '
-            f'Typesetting:-msup(Typesetting:-mi(s[1 .. -10]), Typesetting:-mo("&prime;")) '
+            f'Typesetting:-mrow(Typesetting:-mi(s[1 .. -10]), '
+            f'Typesetting:-mo("\'", mathvariant = "normal", lspace = "0.1111111em", rspace = "0.0em")) '
             f'else x end if end proc):\n'
         )
 
