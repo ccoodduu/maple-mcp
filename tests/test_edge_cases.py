@@ -10,7 +10,7 @@ class TestTS2StrCoverage:
         ("x^2", "^2"),
         ("x_n", "x"),
         ("(a+b)/(c+d)", "/("),
-        ("Int(x, x = 0..1)", "∫"),
+        ("Int(x, x = 0..1)", "Int("),  # integrals now reconstruct to re-parseable Int(), not the bare glyph
     ])
     def test_typesetting_structures(self, engine, expr, expected_fragment):
         _, b64 = engine.encode_equation(expr)
