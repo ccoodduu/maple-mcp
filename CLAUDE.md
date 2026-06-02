@@ -111,4 +111,5 @@ jar cfe maple-export.jar MapleExport -C _b MapleExport.class
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax
 - Multi-level undo not supported (single .mw.bak backup)
 - `screenshot_maple` hangs (then times out → window-grab fallback) on documents with live embedded components (`EC-RTableBrowser` etc.): `WmiECRTableBrowserView.layoutView` sleeps waiting for the interactive component during off-window layout. Rare (~1/75 real assignments); such widget-heavy docs can't be rendered statically anyway.
-- PDF export must run non-headless; spawns a fresh Maple JVM (~5s cold start per call)
+- `screenshot_maple` needs an ACTIVE, UNLOCKED desktop session: Maple's PDF formatter builds a Swing dialog (`WmiSectionOptionsDialog`) that requires a screen device, so export throws `HeadlessException`/"no screen devices" when the screen is locked or the process has no display. Works in normal interactive use (user at the machine); fails when the session is locked or run unattended. `export_pdf` detects this and returns an actionable message.
+- PDF export spawns a fresh Maple JVM (~5s cold start per call)
