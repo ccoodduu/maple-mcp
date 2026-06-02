@@ -37,6 +37,8 @@ public class ReloadAgent {
                             out.println(reload(cmd.substring(7).trim()));
                         } else if ("save".equals(cmd)) {
                             out.println(save());
+                        } else if (cmd != null && cmd.startsWith("export ")) {
+                            out.println(exportPdf(cmd.substring(7).trim()));
                         } else if ("getpath".equals(cmd)) {
                             out.println(getOpenPath());
                         } else {
@@ -87,6 +89,33 @@ public class ReloadAgent {
         } catch (Exception e) {
             log("save error: " + e.getMessage());
             return "error: " + e.getMessage();
+        }
+    }
+
+    // Render a .mw to PDF via Maple's export pipeline, running INSIDE the live
+    // GUI JVM. Unlike a standalone export JVM, this process already has a screen
+    // device (acquired at GUI startup), so it still works when the screen is
+    // locked. Arg is "INPATH|OUTPATH" ('|' is illegal in Windows paths).
+    private static String exportPdf(String arg) {
+        int bar = arg.lastIndexOf('|');
+        if (bar < 0) return "error: bad args (expected IN|OUT)";
+        String in = arg.substring(0, bar);
+        String out = arg.substring(bar + 1);
+        log("export requested: " + in + " -> " + out);
+        try {
+            Class<?> util = Class.forName(
+                "com.maplesoft.worksheet.util.WmiWorksheetExportUtils");
+            util.getMethod("exportPDF", String.class, String.class)
+                .invoke(null, in, out);
+            java.io.File f = new java.io.File(out);
+            if (f.exists() && f.length() > 0) {
+                log("export ok: " + f.length() + " bytes");
+                return "ok";
+            }
+            return "error: empty output";
+        } catch (Throwable t) {
+            log("export error: " + t);
+            return "error: " + t;
         }
     }
 

@@ -20,19 +20,66 @@ _BIN = os.path.join(MAPLE_ROOT, "bin.X86_64_WINDOWS")
 _LAUNCHER_JAR = str(Path(__file__).resolve().parent.parent.parent / "maple-export.jar")
 
 
+def _new_pdf_path() -> str:
+    """Reserve a unique temp PDF name (and remove it so Maple can create it)."""
+    fd, out_path = tempfile.mkstemp(suffix=".pdf")
+    os.close(fd)
+    os.unlink(out_path)
+    return out_path
+
+
+def _export_pdf_via_agent(mw_path: str, timeout: int) -> str | None:
+    """Render via the in-JVM agent (the user's running Maple). That process keeps
+    its screen device even when the screen is locked, so it works headless when
+    the standalone JVM cannot. Returns a PDF path, or None if the agent is not
+    running / the new `export` command is unavailable / it failed."""
+    import socket
+    from maple_mcp.maple_reload import AGENT_PORT
+
+    out_path = _new_pdf_path()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect(("127.0.0.1", AGENT_PORT))
+        s.sendall(f"export {mw_path}|{out_path}\n".encode())
+        resp = s.recv(4096).decode().strip()
+        s.close()
+    except (ConnectionRefusedError, socket.timeout, OSError):
+        resp = None
+
+    if resp == "ok" and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+        return out_path
+    if os.path.exists(out_path):
+        os.unlink(out_path)
+    return None
+
+
 def export_pdf(mw_path: str, timeout: int = 60) -> str:
     """Render a .mw to a temp PDF via Maple's export classes. Returns the PDF path.
 
-    Raises RuntimeError if the export fails. Caller owns the returned temp file.
+    Tries a standalone export JVM first. If that fails because no desktop session
+    is available (locked screen), falls back to the in-JVM agent — the running
+    Maple GUI still has a display. Raises RuntimeError if all routes fail.
     """
+    try:
+        return _export_pdf_standalone(mw_path, timeout)
+    except RuntimeError as e:
+        if "desktop session" in str(e):
+            via_agent = _export_pdf_via_agent(mw_path, timeout)
+            if via_agent:
+                return via_agent
+        raise
+
+
+def _export_pdf_standalone(mw_path: str, timeout: int = 60) -> str:
+    """Render a .mw to a temp PDF in a throwaway Maple JVM. Needs an active,
+    unlocked desktop session. Raises RuntimeError on failure."""
     if not os.path.exists(_JAVA):
         raise RuntimeError(f"Maple JVM not found at {_JAVA}")
     if not os.path.exists(_LAUNCHER_JAR):
         raise RuntimeError(f"maple-export.jar not found at {_LAUNCHER_JAR}")
 
-    fd, out_path = tempfile.mkstemp(suffix=".pdf")
-    os.close(fd)
-    os.unlink(out_path)  # let Maple create it; we just reserved a unique name
+    out_path = _new_pdf_path()
 
     classpath = os.path.join(_JAVA_DIR, "*") + os.pathsep + _LAUNCHER_JAR
     env = dict(os.environ)
