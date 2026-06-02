@@ -376,7 +376,12 @@ def screenshot_maple(match: str | None = None, pages: str | None = None,
     except ValueError as e:
         return str(e)
     except Exception as e:
-        return _window_grab_fallback(str(e))
+        msg = str(e)
+        # A locked/headless session breaks both PDF export AND a screen grab,
+        # so surface the actionable message rather than a black fallback image.
+        if "desktop session" in msg:
+            return msg
+        return _window_grab_fallback(msg)
 
     if not rendered:
         return "Render produced no pages."

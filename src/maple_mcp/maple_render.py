@@ -50,8 +50,20 @@ def export_pdf(mw_path: str, timeout: int = 60) -> str:
     if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
         if os.path.exists(out_path):
             os.unlink(out_path)
-        tail = (proc.stderr or proc.stdout or "").strip()[-600:]
-        raise RuntimeError(f"PDF export failed (exit {proc.returncode}): {tail}")
+        combined = ((proc.stderr or "") + "\n" + (proc.stdout or ""))
+        low = combined.lower()
+        if ("headless" in low or "no screen device" in low
+                or "does not have desktop access" in low):
+            raise RuntimeError(
+                "Maple's PDF export needs an active, unlocked desktop session, but "
+                "none is available (the screen is locked, or this process has no "
+                "display). Unlock the screen / keep the Windows session active and "
+                "retry.")
+        # Surface the FIRST exception line (the real cause), not the truncated tail.
+        cause = next((ln.strip() for ln in combined.splitlines()
+                      if "Exception" in ln or "Error" in ln), "")
+        detail = cause or combined.strip()[:300] or f"exit {proc.returncode}"
+        raise RuntimeError(f"PDF export produced no output: {detail}")
     return out_path
 
 
