@@ -6,6 +6,7 @@ requires-python = ">=3.10"
 dependencies = [
     "mcp[cli]",
     "Pillow",
+    "PyMuPDF",
 ]
 
 [project.scripts]

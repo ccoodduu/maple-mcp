@@ -8,14 +8,20 @@ MCP server that lets Claude read, write, and edit Maple 2025 Document mode (.mw)
 Claude Desktop ←→ MCP Server (Python) ←→ Maple .mw file (XML)
                          ↓                       ↓
                    maplec.dll (kernel)    Java Agent (reload)
+                         ↓
+                   PDF render (export)    → PyMuPDF → page images
 ```
 
-- **Python MCP server** (`src/maple_mcp/server.py`) - 9 tools via FastMCP
+- **Python MCP server** (`src/maple_mcp/server.py`) - 10 tools via FastMCP
 - **Maple kernel** (`maple_engine.py`) - ctypes to maplec.dll for computation + equation encoding
 - **Document module** (`document.py`) - reads/writes .mw XML with raw string insertion (NEVER ET.write)
 - **Image codec** (`image_decode.py`) - Wheeler compression + custom Base64 (reverse-engineered from Maple's Java)
+- **Render module** (`maple_render.py`) - renders the saved .mw to images for `screenshot_maple` (see below)
 - **Java Agent** (`reload-agent.jar`) - injected into Maple's JVM via `-javaagent` in `launch.ini`, provides TCP server on port 19876 for save/reload/getpath without focus stealing
 - **AHK fallback** (`maple_reload.ahk`) - ControlSend to SunAwtFrame if agent unavailable
+
+### screenshot_maple renders via PDF, not a screen grab
+`screenshot_maple` spawns a throwaway Maple JVM (`maple-export.jar` → `WmiWorksheetExportUtils.exportPDF`) that parses the SAVED .mw from disk into a fresh model and exports a PDF — the same path as File ▸ Export As ▸ PDF. PyMuPDF then rasterizes each page to an image. This is window-independent (works with Maple hidden, occluded, or closed) and full-fidelity. Must run NON-headless (the PDF formatter builds invisible Swing owner frames; headless throws `HeadlessException`). If export fails/times out it falls back to a live-window `ImageGrab`.
 
 ## Critical Rules
 
@@ -62,6 +68,7 @@ Equations use MAPLE syntax, not LaTeX. Auto-conversion from LaTeX is attempted b
 | `delete_block` | Delete matched block (refuses section headings unless confirmed) |
 | `append_content` | Append at document end with nested section support |
 | `undo` | Restore from .mw.bak backup |
+| `screenshot_maple` | Render document to page images (Maple PDF export) to verify rendering |
 
 ## Key Files
 
@@ -70,15 +77,25 @@ maple-mcp/
 ├── CLAUDE.md
 ├── maple_reload.ahk          # AHK v2 fallback for save/reload
 ├── reload-agent.jar           # Java agent for Maple JVM
+├── maple-export.jar           # Standalone PDF-export launcher (for screenshot_maple)
 ├── java/ReloadAgent.java      # Agent source
+├── java/MapleExport.java      # PDF-export launcher source (build with Maple's javac)
 ├── pyproject.toml
 └── src/maple_mcp/
     ├── server.py              # MCP tools
     ├── document.py            # .mw XML read/write/match
     ├── maple_engine.py        # Kernel + equation encode/decode
     ├── maple_reload.py        # Save/reload via agent or AHK
+    ├── maple_render.py        # .mw -> PDF -> page images (screenshot_maple)
     ├── image_decode.py        # Wheeler + Base64 image codec
 ```
+
+Rebuild `maple-export.jar` after editing `MapleExport.java`:
+```
+javac -cp "<MAPLE>/java/worksheet.jar" -d _b java/MapleExport.java
+jar cfe maple-export.jar MapleExport -C _b MapleExport.class
+```
+(use Maple's bundled JDK at `<MAPLE>/jre/bin` — it matches Maple's Java 21 runtime).
 
 ## Setup
 
@@ -93,3 +110,5 @@ maple-mcp/
 - `_count_section_depth` scans XML linearly - could be slow on very large documents
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax
 - Multi-level undo not supported (single .mw.bak backup)
+- `screenshot_maple` hangs (then times out → window-grab fallback) on documents with live embedded components (`EC-RTableBrowser` etc.): `WmiECRTableBrowserView.layoutView` sleeps waiting for the interactive component during off-window layout. Rare (~1/75 real assignments); such widget-heavy docs can't be rendered statically anyway.
+- PDF export must run non-headless; spawns a fresh Maple JVM (~5s cold start per call)

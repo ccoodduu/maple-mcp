@@ -20,6 +20,27 @@ def _get_path() -> Path | str:
 
 
 
+def _png_to_image_content(png_data: bytes, max_width: int = 800,
+                          quality: int = 70, small_px: int = 200_000) -> ImageContent:
+    """PNG bytes -> ImageContent. Small images stay PNG (sharp text); large
+    images downscale to max_width and re-encode as JPEG to keep payloads small."""
+    from PIL import Image
+    import io
+
+    img = Image.open(io.BytesIO(png_data))
+    if img.size[0] * img.size[1] < small_px:
+        b64 = base64.b64encode(png_data).decode("ascii")
+        return ImageContent(type="image", data=b64, mimeType="image/png")
+
+    if img.size[0] > max_width:
+        ratio = max_width / img.size[0]
+        img = img.resize((max_width, int(img.size[1] * ratio)), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="JPEG", quality=quality)
+    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+    return ImageContent(type="image", data=b64, mimeType="image/jpeg")
+
+
 def _save_and_edit(edit_fn) -> str:
     path = _get_path()
     if isinstance(path, str):
@@ -51,26 +72,7 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
             _flush_text()
             try:
                 png_data = decode_maple_image(entry["encoded"])
-                from PIL import Image
-                import io
-                img = Image.open(io.BytesIO(png_data))
-                # Small images: keep PNG (sharp text, tiny anyway)
-                # Large images: downscale + JPEG (plots, graphs)
-                if img.size[0] * img.size[1] < 200_000:
-                    b64 = base64.b64encode(png_data).decode("ascii")
-                    mime = "image/png"
-                else:
-                    if img.size[0] > 800:
-                        ratio = 800 / img.size[0]
-                        img = img.resize(
-                            (800, int(img.size[1] * ratio)), Image.LANCZOS)
-                    buf = io.BytesIO()
-                    img.convert("RGB").save(buf, format="JPEG", quality=70)
-                    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
-                    mime = "image/jpeg"
-                result.append(ImageContent(
-                    type="image", data=b64, mimeType=mime
-                ))
+                result.append(_png_to_image_content(png_data))
             except Exception:
                 text_lines.append(f"{indent}[IMAGE: decode failed]")
         elif t == "section":
@@ -332,44 +334,86 @@ def undo() -> str:
 
 
 @mcp.tool()
-def screenshot_maple() -> list[ImageContent] | str:
-    """Take a screenshot of the Maple window to verify document rendering.
+def screenshot_maple(match: str | None = None, pages: str | None = None,
+                     max_pages: int | None = None,
+                     crop_to_match: bool = False) -> list[TextContent | ImageContent] | str:
+    """Render the current document to images to verify how it looks in Maple.
 
-    Use this after editing to visually check that equations, units,
-    formatting, and layout rendered correctly in Maple.
-    Returns the screenshot as an image.
+    Renders the SAVED document through Maple's PDF export engine — the same
+    output as File > Export As > PDF — and returns one image per page. This
+    reflects exactly how equations, units, and layout appear in Maple, and works
+    even if the Maple window is hidden, behind other windows, or closed.
+
+    Use this after editing to visually confirm that formulas, units, and
+    formatting rendered correctly.
+
+    To save context, render only PART of the document:
+      - match: render only the page(s) containing this text. Typeset math has no
+        text layer, so match on a heading, label, or prose (e.g. "Opgave 1.5.7",
+        "Beregning:", "C) Plus-minus") near the part you want to see.
+      - pages: explicit 1-based page spec — "2", "2-3", or "1,3" (ignored if match).
+      - crop_to_match: with match, render from the matched line downward instead
+        of the whole page (tighter image, least context).
+    With no arguments, returns every page.
+
+    Args:
+        match: Render only page(s) whose text contains this string.
+        pages: 1-based page selection like "2", "2-3", "1,3".
+        max_pages: Cap the number of pages returned.
+        crop_to_match: Crop to the matched region (only with match).
     """
-    import ctypes
-    from ctypes import wintypes
-    from PIL import ImageGrab
-    import io
-    import time
+    path = _get_path()
+    if isinstance(path, str):
+        return path
 
-    user32 = ctypes.windll.user32
+    save_in_maple()
 
-    # Wait briefly for any pending reload to finish
-    time.sleep(0.5)
+    from maple_mcp import maple_render
+    try:
+        rendered = maple_render.render_pages(
+            str(path), match=match, pages=pages,
+            max_pages=max_pages, crop_to_match=crop_to_match)
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return _window_grab_fallback(str(e))
 
-    # Find Maple window - try AutoHotkeyGUI wrapper first, then SunAwtFrame
-    hwnd = user32.FindWindowW("AutoHotkeyGUI", None)
-    if not hwnd:
-        hwnd = user32.FindWindowW("SunAwtFrame", None)
-    if not hwnd:
-        return "Could not find Maple window."
+    if not rendered:
+        return "Render produced no pages."
+    return [_png_to_image_content(p, max_width=1100, quality=80) for p in rendered]
 
-    # Get window position
-    rect = wintypes.RECT()
-    user32.GetWindowRect(hwnd, ctypes.byref(rect))
 
-    # Capture that region of the screen
-    bbox = (rect.left, rect.top, rect.right, rect.bottom)
-    img = ImageGrab.grab(bbox)
+def _window_grab_fallback(reason: str) -> list[TextContent | ImageContent] | str:
+    """Last-resort screen grab of the Maple window, used only if PDF rendering
+    is unavailable. Fragile: captures whatever pixels occupy the window's screen
+    rectangle, so it only shows the visible area and fails if Maple is occluded,
+    minimized, or closed."""
+    note = (f"PDF render unavailable ({reason}); showing a live-window screenshot "
+            f"instead. This captures only the visible part of the Maple window.")
+    try:
+        import ctypes
+        from ctypes import wintypes
+        from PIL import ImageGrab
+        import io
 
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        user32 = ctypes.windll.user32
+        hwnd = user32.FindWindowW("AutoHotkeyGUI", None) or \
+            user32.FindWindowW("SunAwtFrame", None)
+        if not hwnd:
+            return f"Could not render document ({reason}) and no Maple window to grab."
 
-    return [ImageContent(type="image", data=b64, mimeType="image/png")]
+        rect = wintypes.RECT()
+        user32.GetWindowRect(hwnd, ctypes.byref(rect))
+        img = ImageGrab.grab((rect.left, rect.top, rect.right, rect.bottom))
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        return [
+            TextContent(type="text", text=note),
+            ImageContent(type="image", data=b64, mimeType="image/png"),
+        ]
+    except Exception:
+        return f"Could not render document: {reason}"
 
 
 @mcp.resource("maple://help/{topic}")

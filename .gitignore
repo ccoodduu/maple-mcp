@@ -7,6 +7,7 @@ __pycache__/
 *.class
 *.jar
 !reload-agent.jar
+!maple-export.jar
 *.png
 *.bin
 *.mw
