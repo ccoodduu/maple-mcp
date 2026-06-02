@@ -116,3 +116,25 @@ class TestChainedRelations:
         _, b64 = engine.encode_equation("d = 25 + 24 = 49")
         decoded = engine.decode_equation(b64)
         assert "25" in decoded and "24" in decoded, f"Chain was evaluated: {decoded}"
+
+
+class TestOperationArrow:
+    """{{expr => op}} renders input ──op──▶ computed-result (context-panel style).
+    The result is computed by the kernel, so encoding must succeed end-to-end."""
+
+    @pytest.mark.parametrize("expr", [
+        "x^2-5*x+6 => factor",
+        "(x^2-4)/(x-2) => simplify",
+        "1/3+1/6 => evaluate",
+        "x^2-4 => solve",
+        "200*Unit('kg') => evaluate",
+    ])
+    def test_operation_encodes(self, engine, expr):
+        _, b64 = engine.encode_equation(expr)
+        assert b64, f"operation failed to encode: {expr}"
+
+    def test_bad_operation_fails_loudly(self, engine):
+        """An unknown operation must fail (empty b64), not emit garbage."""
+        engine._last_encode_error = None
+        _, b64 = engine.encode_equation("x^2 => bogusop")
+        assert not b64

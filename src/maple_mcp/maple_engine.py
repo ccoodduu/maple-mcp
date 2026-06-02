@@ -180,6 +180,14 @@ class MapleEngine:
         import re
 
         expr = expr.strip().rstrip(";:")
+
+        # Operation arrow: "expr => op" renders as  input ──op──▶ result , with the
+        # result computed by the kernel (Maple context-panel style, e.g.
+        # "x^2-4 => factor", "m/rho => evaluate", "eqn => solve").
+        _opm = re.match(r'^(.*?)\s*=>\s*([A-Za-z][A-Za-z0-9]*)\s*$', expr)
+        if _opm and _opm.group(1).strip():
+            return self._encode_operation(_opm.group(1).strip(), _opm.group(2).strip())
+
         expr = self._preprocess_notation(expr)
 
         # Chained / leading relations (a=b=c, 0<=x<=1, "=4*a*b"): split at
@@ -526,6 +534,88 @@ class MapleEngine:
         )
         if 'Error' in raw or 'error' in raw:
             self._last_encode_error = raw.strip()
+            return '', ''
+        content_b64 = ''.join(raw.split())
+        return content_b64, content_b64
+
+    # Friendly operation names -> Maple commands.
+    _OP_ALIASES = {
+        "evaluate": "evalf", "approximate": "evalf", "approx": "evalf",
+        "numeric": "evalf", "isolate": "solve", "result": "value",
+    }
+    # Allowed context-panel operations (after alias resolution). Unknown ops fail
+    # loudly rather than silently emitting an unapplied function like foo(x).
+    _OP_COMMANDS = {
+        "solve", "factor", "simplify", "expand", "evalf", "value", "normal",
+        "combine", "sort", "collect", "rationalize", "convert", "numer", "denom",
+    }
+
+    def _encode_operation(self, input_expr: str, op: str) -> tuple[str, str]:
+        """Encode  input ──op──▶ result  (a Maple context-panel operation): typeset
+        the input, COMPUTE the result in a clean kernel, typeset that too, and join
+        them with a right-arrow labelled by the operation name (mover of &rarr; +
+        mtext). Both halves go through the normal encoder (units/Greek/primes)."""
+        import base64
+        cmd = self._OP_ALIASES.get(op.lower(), op.lower())
+        if cmd not in self._OP_COMMANDS:
+            self._last_encode_error = (
+                f"unknown operation '{op}' in 'expr => {op}'. Use one of: "
+                f"solve, factor, simplify, expand, evaluate, value, normal.")
+            return '', ''
+        units_pre = 'with(Units:-Standard):\n' if 'Unit(' in input_expr else ''
+
+        # 1. Compute the result and convert it to a Maple source string. Typeset
+        #    holds its argument unevaluated, so we must round-trip through source.
+        #    Wrap in a list so a multi-valued result (e.g. solve -> 2, -2) stays a
+        #    single convert() argument; unwrap when there is just one value.
+        res_str = self._execute_clean(
+            f'{units_pre}'
+            f'local _r: _r := [{cmd}({input_expr})]:\n'
+            f'printf("%s", convert(`if`(nops(_r) = 1, _r[1], _r), string));'
+        ).strip()
+        if not res_str or 'Error' in res_str or 'error' in res_str:
+            self._last_encode_error = res_str or f'{op}: no result'
+            return '', ''
+        # Units:-Unit(...) / Unit(...) -> the [[unit]] markup the encoder expects.
+        res_str = res_str.replace('Units:-Unit', 'Unit')
+
+        # 2. Typeset both halves via the normal encoder (handles units, etc.).
+        in_b64, _ = self.encode_equation(input_expr)
+        if not in_b64:
+            return '', ''
+        res_b64, _ = self.encode_equation(res_str)
+        if not res_b64:
+            self._last_encode_error = f'could not typeset result: {res_str[:80]}'
+            return '', ''
+
+        def _dump(b64, name):
+            p = os.path.join(os.environ.get("TEMP", "/tmp"), name)
+            with open(p, 'wb') as f:
+                f.write(base64.b64decode(b64).decode('latin-1').encode('latin-1'))
+            return p.replace(chr(92), '/')
+        in_fwd = _dump(in_b64, "maple_op_in.m")
+        res_fwd = _dump(res_b64, "maple_op_res.m")
+
+        arrow_mo = ('Typesetting:-mo("&rarr;", executable = "true", '
+                    'font_style_name = "2D Math", mathvariant = "normal", '
+                    'stretchy = "true", accent = "false", '
+                    'lspace = "0.2777778em", rspace = "0.2777778em")')
+        arrow = (f'Typesetting:-mover({arrow_mo}, Typesetting:-mtext('
+                 f'{self._maple_str(op)}, executable = "true", '
+                 f'font_style_name = "2D Math", mathvariant = "normal"), '
+                 f'accent = "false")')
+
+        # 3. Join: mrow(input, labelled-arrow, result).
+        raw = self._execute_clean(
+            f'local in_ts, res_ts, ts:\n'
+            f'in_ts := op(sscanf(FileTools:-Text:-ReadFile("{in_fwd}"), "%m")):\n'
+            f'res_ts := op(sscanf(FileTools:-Text:-ReadFile("{res_fwd}"), "%m")):\n'
+            f'ts := Typesetting:-mrow(in_ts, {arrow}, res_ts):\n'
+            f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
+            f' style=TwoDimInput, executable=true)));\n'
+        )
+        if not raw or 'Error' in raw or 'error' in raw:
+            self._last_encode_error = (raw or 'operation join failed').strip()
             return '', ''
         content_b64 = ''.join(raw.split())
         return content_b64, content_b64

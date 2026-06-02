@@ -51,6 +51,10 @@ Maple requires background on: (1) Text-field element, (2) Font elements, (3) ins
 __underline__         underlined text
 {color:R,G,B}text{/color}  highlight background
 [[unit]]              Maple unit in equations (e.g. [[Omega]], [[J/(kg*degC)]])
+{{expr => op}}        Context-panel operation: input ──op──▶ computed result
+                      (op: solve, factor, simplify, expand, evaluate). The
+                      result is computed by the kernel; renders as an mover
+                      arrow (&rarr; + mtext label), like Maple's context panel.
 ```
 
 Equations use MAPLE syntax, not LaTeX. Auto-conversion from LaTeX is attempted but not perfect.

@@ -206,6 +206,8 @@ def insert_after(match: str, items: list[dict],
       **bold**  *italic*  __underline__
       {color:R,G,B}text{/color}    highlight background
       [[unit]]                      unit in equations: [[kg]], [[J/(kg*degC)]]
+      {{expr => op}}                Maple operation: renders  expr ──op──▶ result
+                                    op = solve, factor, simplify, expand, evaluate
 
     ALL math must use {{}} — never write math as plain text.
     ALL numbers with units must use {{200*[[kg]]}}, never "200 kg".
@@ -215,11 +217,13 @@ def insert_after(match: str, items: list[dict],
     Combine Greek+variable with *: Delta*T shows Δ·T (DeltaT shows literal text).
     Derivatives display as primes: f'(x), g''(x).
 
-    Math blocks DISPLAY expressions; they do NOT run commands. To differentiate,
-    solve, integrate, or evaluate, call `execute` FIRST, then write the RESULT
-    as math. Do NOT put diff(), solve(), int(), or eval() inside {{}} or code —
-    they do not typeset correctly. (Int(...) / Sum(...) with a CAPITAL letter are
-    fine: they are inert display notation, not commands.)
+    A plain {{}} block DISPLAYS an expression; it does not run commands. To show
+    a Maple operation WITH its computed result (the nice ──op──▶ arrow), use
+    {{expr => op}}, e.g. {{x^2-4 => factor}}, {{1/3+1/6 => evaluate}},
+    {{20000*[[kg]]/(1260*[[kg/m^3]]) => evaluate}}. Maple computes the result.
+    Do NOT put bare diff()/solve()/int()/eval() inside a plain {{}} — they do not
+    typeset; use {{expr => op}} or compute with `execute` and write the result.
+    (Int(...) / Sum(...) with a CAPITAL letter are fine: inert display notation.)
     Coordinates/points: write in text ("punktet (2, 1)"), not as {{(2,1)}}.
 
     CRITICAL: Each {{}} must contain at most ONE = sign.
