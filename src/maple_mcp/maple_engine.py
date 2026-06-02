@@ -180,6 +180,15 @@ class MapleEngine:
         import re
 
         expr = expr.strip().rstrip(";:")
+        expr = self._preprocess_notation(expr)
+
+        # Chained / leading relations (a=b=c, 0<=x<=1, "=4*a*b"): split at
+        # top-level relational operators and join the typeset operands. This
+        # only triggers for chains (>=2 operators) or a leading relation, so
+        # ordinary single-relation equations keep their existing code path.
+        _operands, _rel_ents = self._split_relations(expr)
+        if len(_rel_ents) >= 2 or (_rel_ents and not _operands[0].strip()):
+            return self._encode_relation_chain(_operands, _rel_ents)
 
         # := assignments: encode LHS and RHS separately, join with &coloneq;
         if ':=' in expr:
@@ -295,6 +304,7 @@ class MapleEngine:
                 f'ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false):\n'
                 f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
                 f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
+                f'{self._notation_fixup("ts")}'
                 f'{_greek_subs_code()}'
                 f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
                 f' style=TwoDimInput, executable=false)));\n'
@@ -394,6 +404,123 @@ class MapleEngine:
         )
 
     @staticmethod
+    def _maple_str(s: str) -> str:
+        """Escape a Python string into a Maple double-quoted string literal."""
+        return '"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+    @staticmethod
+    def _preprocess_notation(expr: str) -> str:
+        """Make a few human notations parseable by InertForm:-Parse:
+          '+-' / '+/-'  -> the &pm neutral operator (a parseable binary op)
+          f'(x)         -> fPRIMESENT(x)
+        Both are turned back into proper Typesetting by _notation_fixup().
+        """
+        expr = expr.replace('+/-', ' &pm ').replace('+-', ' &pm ')
+        # Mark derivative primes WITHOUT mangling Maple single-quoted strings
+        # such as Unit('Omega') (whose closing quote also follows a letter).
+        out, in_quote = [], False
+        for ch in expr:
+            if ch == "'":
+                if in_quote:
+                    in_quote = False
+                    out.append(ch)
+                elif out and (out[-1].isalnum() or out[-1] == ']'):
+                    out.append('PRIMESENT')
+                else:
+                    in_quote = True
+                    out.append(ch)
+            else:
+                out.append(ch)
+        return ''.join(out)
+
+    @staticmethod
+    def _notation_fixup(var: str) -> str:
+        """Maple subsindets snippet: the &pm operator -> a PlusMinus sign, and
+        any name ending in PRIMESENT -> a prime superscript (f -> f')."""
+        return (
+            f'{var} := subsindets({var}, specfunc(Typesetting:-mo), proc(x) '
+            f'if StringTools:-Search("pm", op(1,x)) > 0 then Typesetting:-mo("&PlusMinus;") '
+            f'else x end if end proc):\n'
+            f'{var} := subsindets({var}, specfunc(Typesetting:-mi), proc(x) local s; s := op(1,x); '
+            f'if type(s, string) and StringTools:-IsSuffix("PRIMESENT", s) then '
+            f'Typesetting:-msup(Typesetting:-mi(s[1 .. -10]), Typesetting:-mo("&prime;")) '
+            f'else x end if end proc):\n'
+        )
+
+    @staticmethod
+    def _split_relations(expr: str):
+        """Split expr at TOP-LEVEL relational operators (longest-match first).
+
+        Returns (operands, operator_entities). '=' inside (), [], {} or ranges
+        is not split (it stays inside an operand), and the '>' of an arrow '->'
+        is not treated as a relation.
+        """
+        ops = [(':=', '&coloneq;'), ('<=', '&le;'), ('>=', '&ge;'),
+               ('<>', '&ne;'), ('=', '='), ('<', '&lt;'), ('>', '&gt;')]
+        operands, operator_ents = [], []
+        cur, depth, i, n = '', 0, 0, len(expr)
+        while i < n:
+            c = expr[i]
+            if c in '([{':
+                depth += 1; cur += c; i += 1; continue
+            if c in ')]}':
+                depth -= 1; cur += c; i += 1; continue
+            if depth == 0:
+                matched = next(((t, e) for t, e in ops if expr[i:i + len(t)] == t), None)
+                if matched:
+                    tok, ent = matched
+                    if tok == '>' and cur.rstrip().endswith('-'):  # arrow '->'
+                        cur += c; i += 1; continue
+                    operands.append(cur); operator_ents.append(ent)
+                    cur = ''; i += len(tok); continue
+            cur += c; i += 1
+        operands.append(cur)
+        return operands, operator_ents
+
+    def _encode_relation_chain(self, operands, operator_ents):
+        """Typeset each operand and join them with the relation operators as an
+        mrow. Used for chained/leading relations the Maple parser rejects."""
+        import re
+        ts_vars, lines = [], []
+        for idx, operand in enumerate(operands):
+            operand = operand.strip()
+            if not operand:
+                ts_vars.append(None)
+                continue
+            operand = re.sub(r'\b([a-zA-Z])_([a-zA-Z0-9]+)\b', r'\1[\2]', operand)
+            v = f'o{idx}_ts'
+            lit = self._maple_str(operand)
+            lines.append(f'{v} := InertForm:-Typeset(InertForm:-Parse({lit}), inert=false):')
+            lines.append(f'{v} := subsindets({v}, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):')
+            lines.append(f'{v} := subsindets({v}, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):')
+            ts_vars.append(v)
+        if not any(ts_vars):
+            self._last_encode_error = 'empty relation chain'
+            return '', ''
+        mrow_args = []
+        for idx, v in enumerate(ts_vars):
+            if idx > 0:
+                mrow_args.append(f'Typesetting:-mo("{operator_ents[idx - 1]}")')
+            if v is not None:
+                mrow_args.append(v)
+        decl = ', '.join(['ts'] + [v for v in ts_vars if v])
+        body = '\n'.join(lines)
+        mrow = ', '.join(mrow_args)
+        raw = self._execute_clean(
+            f'local {decl}:\n'
+            f'{body}\n'
+            f'ts := Typesetting:-mrow({mrow}):\n'
+            f'{self._notation_fixup("ts")}'
+            f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
+            f' style=TwoDimInput, executable=false)));\n'
+        )
+        if 'Error' in raw or 'error' in raw:
+            self._last_encode_error = raw.strip()
+            return '', ''
+        content_b64 = ''.join(raw.split())
+        return content_b64, content_b64
+
+    @staticmethod
     def _execute_clean(statement: str) -> str:
         """Execute a Maple statement in a clean subprocess (no user variables)."""
         import subprocess
@@ -402,7 +529,8 @@ class MapleEngine:
             result = subprocess.run(
                 [cmaple, "-q"],
                 input=statement + "\nquit;\n",
-                capture_output=True, text=True, timeout=15
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=15
             )
             # Clean output: join lines, strip whitespace
             lines = [l.strip() for l in result.stdout.strip().split('\n')
@@ -495,6 +623,9 @@ end proc:
         result = result.replace('\u2146', '')   # DifferentialD
         result = result.replace('\u2145', '')   # DoubleStruckCapitalD
         result = result.replace('  ', ' ')
+        # Normalize visible operator glyphs the encoder cannot re-parse
+        for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>')):
+            result = result.replace(_g, _a)
 
         # Detect highlight color in the raw Typesetting data
         self._last_eq_background = None

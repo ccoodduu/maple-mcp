@@ -90,4 +90,29 @@ class TestErrorRejection:
     def test_maple_error_message_included(self, engine):
         from maple_mcp.document import _equation_xml
         with pytest.raises(ValueError, match="Maple error"):
-            _equation_xml("a = b = c", executable=False)
+            _equation_xml("1 + + 2", executable=False)
+
+
+class TestChainedRelations:
+    """Chained/leading relations (worked-calc notation) must encode and the
+    decoded form must preserve the chain literally (no evaluation)."""
+
+    @pytest.mark.parametrize("expr,fragments", [
+        ("a = b = c", ["a", "b", "c"]),
+        ("d = 25 + 24 = 49", ["25", "49"]),
+        ("0 <= x <= 1", ["x"]),
+        ("F(3) = 3^3/3 = 27/3 = 9", ["27", "9"]),
+        ("x[1] = (5 + 7)/4 = 3", ["3"]),
+    ])
+    def test_chain_encodes_and_preserves(self, engine, expr, fragments):
+        _, b64 = engine.encode_equation(expr)
+        assert b64, f"Chained relation failed to encode: {expr}"
+        decoded = engine.decode_equation(b64)
+        for frag in fragments:
+            assert frag in decoded, f"Lost '{frag}' in decoded '{decoded}' for: {expr}"
+
+    def test_chain_not_evaluated(self, engine):
+        """25 + 24 must stay literal, not collapse to 49."""
+        _, b64 = engine.encode_equation("d = 25 + 24 = 49")
+        decoded = engine.decode_equation(b64)
+        assert "25" in decoded and "24" in decoded, f"Chain was evaluated: {decoded}"

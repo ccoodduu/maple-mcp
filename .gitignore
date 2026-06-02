@@ -16,6 +16,7 @@ __pycache__/
 /test_*.py
 *.json
 !pyproject.toml
+!tools/edgecase_corpus.json
 extracted_*
 tmp_*
 ahk_test.ahk

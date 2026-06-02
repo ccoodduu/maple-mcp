@@ -433,6 +433,9 @@ def _decode_entities(text: str) -> str:
     text = text.replace('&uminus0;', '-')
     text = text.replace('&it;', '*')
     text = html.unescape(text)
+    # Normalize visible operator glyphs the encoder cannot re-parse
+    for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>')):
+        text = text.replace(_g, _a)
     # Remove invisible Unicode characters
     text = text.replace('\u2061', '')   # ApplyFunction
     text = text.replace('\u2062', '*')  # InvisibleTimes → *

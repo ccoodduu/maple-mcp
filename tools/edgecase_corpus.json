@@ -1,0 +1,1364 @@
+{
+ "equations": [
+  {
+   "expr": "2*x^2 - 5*x - 3 = 0",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "a = 2",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "b = -5",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "c = -3",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "d = b^2 - 4*a*c",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "d = (-5)^2 - 4*2*(-3)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "d = 25 - (-24)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "d = 25 + 24 = 49",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "d > 0",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x = (-b + sqrt(d))/(2*a)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x = (-b - sqrt(d))/(2*a)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x = (-(-5) + sqrt(49))/(2*2)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "sqrt(49) = 7",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x = (5 + 7)/4",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x[1] = (5 + 7)/4 = 12/4 = 3",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x[2] = (5 - 7)/4 = -2/4 = -1/2",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "solve(2*x^2 - 5*x - 3 = 0, x)",
+   "mode": "exec",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x[top] = -b/(2*a)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "x[top] = -(-5)/(2*2) = 5/4",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "y[top] = -d/(4*a)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "y[top] = -49/(4*2) = -49/8",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "T = (5/4, -49/8)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "f(x) = 2*x^2 - 5*x - 3",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "f(5/4) = 2*(5/4)^2 - 5*(5/4) - 3",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "f(5/4) = 2*(25/16) - 25/4 - 3 = 25/8 - 25/4 - 3 = -49/8",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "2*x^2 - 5*x - 3 = 2*(x - 3)*(x + 1/2)",
+   "mode": "display",
+   "topic": "Andengradsligning"
+  },
+  {
+   "expr": "f(x) = 3*x^3 - 2*x^2 + 5*x - 1",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "d/dx(x^n) = n*x^(n-1)",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "f'(x) = 3*3*x^2 - 2*2*x + 5",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "f'(x) = 9*x^2 - 4*x + 5",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "f(2) = 3*2^3 - 2*2^2 + 5*2 - 1",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "3*8 - 2*4 + 10 - 1",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "24 - 8 + 10 - 1 = 25",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "(2, 25)",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "f'(2) = 9*2^2 - 4*2 + 5",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "9*4 - 8 + 5",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "36 - 8 + 5 = 33",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "y = f'(a)*(x-a) + f(a)",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "y = 33*(x-2) + 25",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "y = 33*x - 66 + 25",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "y = 33*x - 41",
+   "mode": "display",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "diff(3*x^3 - 2*x^2 + 5*x - 1, x)",
+   "mode": "exec",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "eval(9*x^2 - 4*x + 5, x = 2)",
+   "mode": "exec",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "eval(3*x^3 - 2*x^2 + 5*x - 1, x = 2)",
+   "mode": "exec",
+   "topic": "Differentialregning"
+  },
+  {
+   "expr": "g(x) = (2*x^2 + 1)^4",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "g(x) = f(u(x))",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "u = u(x) = 2*x^2 + 1",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "f(u) = u^4",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "g'(x) = f'(u(x)) * u'(x)",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "(d*g)/(d*x) = (d*f)/(d*u) * (d*u)/(d*x)",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "f'(u) = 4*u^3",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "u'(x) = 4*x",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "g'(x) = 4*u^3 * 4*x",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "g'(x) = 4*(2*x^2 + 1)^3 * 4*x",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "g'(x) = 16*x*(2*x^2 + 1)^3",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "diff((2*x^2 + 1)^4, x)",
+   "mode": "exec",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "g'(1) = 16*1*(2*1^2 + 1)^3 = 16*27 = 432",
+   "mode": "display",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "16*(2*x^2+1)^3*x",
+   "mode": "exec",
+   "topic": "Kædereglen"
+  },
+  {
+   "expr": "Int(x^2, x = 0..3)",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "f(x) = x^2",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "Int(x^2, x)",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "Int(x^n, x) = x^(n+1)/(n+1) + C",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "F(x) = x^(2+1)/(2+1) = x^3/3",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "F(x) = x^3/3",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "diff(x^3/3, x) = 3*x^2/3 = x^2",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "Int(x^2, x = 0..3) = [x^3/3]",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "Int(x^2, x = 0..3) = F(3) - F(0)",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "F(3) = 3^3/3 = 27/3 = 9",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "F(0) = 0^3/3 = 0",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "Int(x^2, x = 0..3) = 27/3 - 0/3 = 27/3 - 0 = 9",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "Int(x^2, x = 0..3) = 9",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "int(x^2, x = 0..3)",
+   "mode": "exec",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "x^2 >= 0",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "A = Int(x^2, x = 0..3) = 9",
+   "mode": "display",
+   "topic": "Bestemt integral"
+  },
+  {
+   "expr": "n = 4",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "a = (n*Sum(x[i]*y[i],i=1..n) - Sum(x[i],i=1..n)*Sum(y[i],i=1..n))/(n*Sum(x[i]^2,i=1..n) - (Sum(x[i],i=1..n))^2)",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "b = (Sum(y[i],i=1..n) - a*Sum(x[i],i=1..n))/n",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "Sum(x[i],i=1..n) = 1+2+3+4 = 10",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "Sum(y[i],i=1..n) = 2.1+3.9+6.2+8.1 = 20.3",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "Sum(x[i]^2,i=1..n) = 1+4+9+16 = 30",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "Sum(x[i]*y[i],i=1..n) = 2.1+7.8+18.6+32.4 = 60.9",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "Sum(y[i]^2,i=1..n) = 4.41+15.21+38.44+65.61 = 123.67",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "a = (4*60.9 - 10*20.3)/(4*30 - 10^2) = (243.6 - 203)/(120 - 100) = 40.6/20 = 2.03",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "b = (20.3 - 2.03*10)/4 = (20.3 - 20.3)/4 = 0",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "y = 2.03*x + 0",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "y = 2.03*x",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "xs := [1,2,3,4]; ys := [2.1,3.9,6.2,8.1]; n := 4; Sx := add(xs); Sy := add(ys); Sxx := add(x^2, x in xs); Sxy := add(xs[i]*ys[i], i=1..n); a := (n*Sxy - Sx*Sy)/(n*Sxx - Sx^2); b := (Sy - a*Sx)/n",
+   "mode": "exec",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "yhat[i] = 2.03*x[i]",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "yhat[1] = 2.03*1 = 2.03",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "yhat[2] = 2.03*2 = 4.06",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "yhat[3] = 2.03*3 = 6.09",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "yhat[4] = 2.03*4 = 8.12",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "e[i] = y[i] - yhat[i]",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "e[1] = 2.1 - 2.03 = 0.07; e[2] = 3.9 - 4.06 = -0.16; e[3] = 6.2 - 6.09 = 0.11; e[4] = 8.1 - 8.12 = -0.02",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "S[xx] = Sum(x[i]^2,i=1..n) - (Sum(x[i],i=1..n))^2/n = 30 - 10^2/4 = 5",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "S[yy] = Sum(y[i]^2,i=1..n) - (Sum(y[i],i=1..n))^2/n = 123.67 - 20.3^2/4 = 20.6475",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "S[xy] = Sum(x[i]*y[i],i=1..n) - Sum(x[i],i=1..n)*Sum(y[i],i=1..n)/n = 60.9 - 10*20.3/4 = 10.15",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "r = S[xy]/sqrt(S[xx]*S[yy]) = 10.15/sqrt(5*20.6475) = 0.99896",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "SSE = Sum(e[i]^2,i=1..n) = 0.07^2 + (-0.16)^2 + 0.11^2 + (-0.02)^2 = 0.043",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "SST = S[yy] = 20.6475",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "R^2 = 1 - SSE/SST = 1 - 0.043/20.6475 = 0.99792",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "R^2 = r^2 = 0.99896^2 = 0.99792",
+   "mode": "display",
+   "topic": "Lineær regression for datapunkterne (1, 2.1), (2, "
+  },
+  {
+   "expr": "v[0] = 0*[[m/s]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "a = 3*[[m/s^2]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "t = 8*[[s]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "v = v[0]+a*t",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "v = 0*[[m/s]]+3*[[m/s^2]]*8*[[s]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "v = 3*8*[[m/s]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "v = 24*[[m/s]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "0 + 3*8",
+   "mode": "exec",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = v[0]*t+(1)/(2)*a*t^2",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = (1)/(2)*a*t^2",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = (1)/(2)*3*[[m/s^2]]*(8*[[s]])^2",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = (1)/(2)*3*64*[[m]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = 96*[[m]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "1/2*3*8^2",
+   "mode": "exec",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = (v^2-v[0]^2)/(2*a)",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = ((24*[[m/s]])^2-0)/(2*3*[[m/s^2]])",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "s = (576)/(6)*[[m]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "v = 24*[[m/s]] = 86.4*[[km/h]]",
+   "mode": "display",
+   "topic": "Kinematik"
+  },
+  {
+   "expr": "m = 2*[[kg]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "c = 4180*[[J/(kg*degC)]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "T[start] = 20*[[degC]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "T[slut] = 80*[[degC]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Q = m*c*Delta*T",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Delta*T = T[slut] - T[start]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Delta*T = 80*[[degC]] - 20*[[degC]] = 60*[[degC]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Q = m*c*Delta*T = 2*[[kg]] * 4180*[[J/(kg*degC)]] * 60*[[degC]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Q = 2 * 4180 * 60 * [[J]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Q = 501600*[[J]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Q = 501600*[[J]] = 501.6*[[kJ]]",
+   "mode": "display",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "m := 2; c := 4180; T_start := 20; T_slut := 80; DeltaT := T_slut - T_start; Q := m*c*DeltaT",
+   "mode": "exec",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "Q_kJ := Q/1000",
+   "mode": "exec",
+   "topic": "Energi/varme"
+  },
+  {
+   "expr": "R[1] = 100*[[Omega]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "R[2] = 220*[[Omega]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "R[3] = 330*[[Omega]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "U = 12*[[V]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "R[samlet] = R[1]+R[2]+R[3]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "R[samlet] = 100*[[Omega]]+220*[[Omega]]+330*[[Omega]] = 650*[[Omega]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "R_samlet := 100*Unit('Omega') + 220*Unit('Omega') + 330*Unit('Omega')",
+   "mode": "exec",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "I = U/R[samlet]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "I = (12*[[V]])/(650*[[Omega]]) = 0.01846*[[A]] = 18.46*[[mA]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "I_strom := 12*Unit('V') / (650*Unit('Omega'))",
+   "mode": "exec",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "P = U*I",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "P = 12*[[V]]*0.01846*[[A]] = 0.2215*[[W]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "P = U^2/R[samlet]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "P = (12*[[V]])^2/(650*[[Omega]]) = (144*[[V^2]])/(650*[[Omega]]) = 0.2215*[[W]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "P_effekt := (12*Unit('V'))^2 / (650*Unit('Omega'))",
+   "mode": "exec",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "P = R[samlet]*I^2",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "U[1] = R[1]*I = 100*[[Omega]]*0.01846*[[A]] = 1.846*[[V]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "U[2] = R[2]*I = 220*[[Omega]]*0.01846*[[A]] = 4.062*[[V]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "U[3] = R[3]*I = 330*[[Omega]]*0.01846*[[A]] = 6.092*[[V]]",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "U[1]+U[2]+U[3] = 1.846*[[V]]+4.062*[[V]]+6.092*[[V]] = 12*[[V]] = U",
+   "mode": "display",
+   "topic": "Elektriske kredsløb"
+  },
+  {
+   "expr": "V = 0.5*[[m^3]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "rho = 1000*[[kg/m^3]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "g = 9.82*[[m/s^2]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F[opdrift] = rho*g*V",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "m[fortrengt] = rho*V",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "m[fortrengt] = 1000*[[kg/m^3]]*0.5*[[m^3]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "m[fortrengt] = 500*[[kg]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F[opdrift] = m[fortrengt]*g",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F[opdrift] = 500*[[kg]]*9.82*[[m/s^2]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F[opdrift] = 1000*[[kg/m^3]]*9.82*[[m/s^2]]*0.5*[[m^3]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F[opdrift] = 1000*9.82*0.5*[[(kg*m)/s^2]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F[opdrift] = 4910*[[N]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "[[kg/m^3]]*[[m/s^2]]*[[m^3]] = [[(kg*m)/s^2]] = [[N]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F[opdrift] = 4.910*[[kN]]",
+   "mode": "display",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "rho := 1000*Unit('kg/m^3')",
+   "mode": "exec",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "g := 9.82*Unit('m/s^2')",
+   "mode": "exec",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "V := 0.5*Unit('m^3')",
+   "mode": "exec",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "F_opdrift := rho*g*V",
+   "mode": "exec",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "simplify(convert(F_opdrift, units, N))",
+   "mode": "exec",
+   "topic": "Tryk og opdrift"
+  },
+  {
+   "expr": "n = 2*[[mol]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "T = 300*[[K]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "V = 0.05*[[m^3]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "R = 8.314*[[J/(mol*K)]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p*V = n*R*T",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p = (n*R*T)/(V)",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p = (2*[[mol]]*8.314*[[J/(mol*K)]]*300*[[K]])/(0.05*[[m^3]])",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "n*R*T = 2*8.314*300*[[J]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "n*R*T = 4988.4*[[J]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p = (4988.4*[[J]])/(0.05*[[m^3]])",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "[[J/m^3]] = [[Pa]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p = 99768*[[Pa]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p = 99.768*[[kPa]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "n := 2",
+   "mode": "exec",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "T := 300",
+   "mode": "exec",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "V := 0.05",
+   "mode": "exec",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "R := 8.314",
+   "mode": "exec",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p := n*R*T/V",
+   "mode": "exec",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p_kPa := p/1000",
+   "mode": "exec",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "p = 9.9768e4*[[Pa]] = 0.998*[[bar]]",
+   "mode": "display",
+   "topic": "Idealgasligningen"
+  },
+  {
+   "expr": "(a+b)^2-(a-b)^2",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(a+b)^2",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(a+b)^2=a^2+2*a*b+b^2",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(a-b)^2",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(a-b)^2=a^2-2*a*b+b^2",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(a+b)^2-(a-b)^2=(a^2+2*a*b+b^2)-(a^2-2*a*b+b^2)",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "=a^2+2*a*b+b^2-a^2+2*a*b-b^2",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "=(a^2-a^2)+(2*a*b+2*a*b)+(b^2-b^2)",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "=0+4*a*b+0",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "=4*a*b",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(a+b)^2-(a-b)^2=4*a*b",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "x^2-y^2=(x+y)*(x-y)",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(a+b)^2-(a-b)^2=((a+b)+(a-b))*((a+b)-(a-b))",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "=(2*a)*(2*b)",
+   "mode": "display",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "expand((a+b)^2-(a-b)^2)",
+   "mode": "exec",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "simplify((a+b)^2-(a-b)^2)",
+   "mode": "exec",
+   "topic": "Kvadratsaetninger"
+  },
+  {
+   "expr": "(x^2 - 1)/(x^2 + 2*x + 1)",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x^2 - 1 = (x - 1)*(x + 1)",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x^2 + 2*x + 1 = (x + 1)^2",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x^2 + 2*x + 1 = (x + 1)*(x + 1)",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "(x^2 - 1)/(x^2 + 2*x + 1) = ((x - 1)*(x + 1))/((x + 1)*(x + 1))",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "((x - 1)*(x + 1))/((x + 1)*(x + 1)) = (x - 1)/(x + 1)",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "(x^2 - 1)/(x^2 + 2*x + 1) = (x - 1)/(x + 1)",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x^2 + 2*x + 1 = 0",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "(x + 1)^2 = 0",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x + 1 = 0",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x = -1",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x = (-b +- sqrt(b^2 - 4*a*c))/(2*a)",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x = (-2 +- sqrt(2^2 - 4*1*1))/(2*1)",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "x = (-2 +- sqrt(0))/2 = -1",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "Dm = R \\ {-1}",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "Dm = {x in R | x <> -1}",
+   "mode": "display",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "factor((x^2 - 1)/(x^2 + 2*x + 1))",
+   "mode": "exec",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "normal((x^2 - 1)/(x^2 + 2*x + 1))",
+   "mode": "exec",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "solve(x^2 + 2*x + 1 = 0, x)",
+   "mode": "exec",
+   "topic": "Reducer (x^2 - 1)/(x^2 + 2*x + 1) og angiv definit"
+  },
+  {
+   "expr": "v[0] = 20*[[m/s]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "theta = 30*[[degrees]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "v[0*x] = v[0]*cos(theta)",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "v[0*y] = v[0]*sin(theta)",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "v[0*x] = 20*[[m/s]]*cos(30*[[degrees]]) = 17.32*[[m/s]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "v[0*y] = 20*[[m/s]]*sin(30*[[degrees]]) = 10.0*[[m/s]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "x(t) = v[0*x]*t",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "y(t) = v[0*y]*t - (1/2)*g*t^2",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "v[y](t) = v[0*y] - g*t",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "v[0*y] - g*t[top] = 0",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "t[top] = v[0*y]/g = (10.0*[[m/s]])/(9.82*[[m/s^2]]) = 1.02*[[s]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "h = v[0*y]*t[top] - (1/2)*g*t[top]^2",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "h = (v[0]^2*sin(theta)^2)/(2*g)",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "h = ((20*[[m/s]])^2*sin(30*[[degrees]])^2)/(2*9.82*[[m/s^2]])",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "h = (400*[[m^2/s^2]]*0.25)/(19.64*[[m/s^2]]) = 5.09*[[m]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "t[flight] = 2*t[top] = (2*v[0*y])/g",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "t[flight] = (2*10.0*[[m/s]])/(9.82*[[m/s^2]]) = 2.04*[[s]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "R = v[0*x]*t[flight]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "R = (v[0]^2*sin(2*theta))/g",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "R = ((20*[[m/s]])^2*sin(2*30*[[degrees]]))/(9.82*[[m/s^2]])",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "R = (400*[[m^2/s^2]]*sin(60*[[degrees]]))/(9.82*[[m/s^2]]) = (400*[[m^2/s^2]]*0.866)/(9.82*[[m/s^2]]) = 35.28*[[m]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "R := evalf(20^2*sin(2*Pi/6)/9.82)",
+   "mode": "exec",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "h := evalf(20^2*sin(Pi/6)^2/(2*9.82))",
+   "mode": "exec",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "R = 35.28*[[m]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "h = 5.09*[[m]]",
+   "mode": "display",
+   "topic": "Det skraa kast"
+  },
+  {
+   "expr": "v = k*[A]^n",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "v[1] = k*[A][1]^n",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "v[2] = k*[A][2]^n",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "[A][2] = 2*[A][1]",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "v[2] = 2*v[1]",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "(v[2])/(v[1]) = (k*[A][2]^n)/(k*[A][1]^n)",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "(v[2])/(v[1]) = ([A][2]/[A][1])^n",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "(2*v[1])/(v[1]) = ((2*[A][1])/[A][1])^n",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "2 = 2^n",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "2^1 = 2^n",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "n = 1",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "ln(2) = n*ln(2)",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "n = ln(2)/ln(2) = 1",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "n := log[2](2)",
+   "mode": "exec",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "v = k*[A]^1",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "v = k*[A]",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "[k] = [v]/[A] = ([mol/(L*s)])/([mol/L]) = [1/s]",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "[v] = [[mol/(L*s)]]",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "[A] = [[mol/L]]",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  },
+  {
+   "expr": "k = [[1/s]]",
+   "mode": "display",
+   "topic": "Reaktionshastighed (kemi)"
+  }
+ ]
+}
