@@ -1008,6 +1008,17 @@ def delete_block(file_path: str, match: str,
     path.write_text(content, encoding="utf-8")
 
 
+def _extract_align(text: str) -> tuple[str, str | None]:
+    """Pull a trailing `[align:left|center|right]` tag off the text. This is the
+    exact form read_document prints for an aligned block, so what you read can be
+    written straight back (read/write symmetry)."""
+    import re
+    m = re.search(r'\s*\[align:(left|center|right)\]\s*$', text)
+    if m:
+        return text[:m.start()].rstrip(), m.group(1)
+    return text, None
+
+
 def _make_block(item: dict, label_num: int) -> str:
     t = item.get("type", "text")
     if t == "empty":
@@ -1022,10 +1033,9 @@ def _make_block(item: dict, label_num: int) -> str:
         img_data = Path(item["path"]).read_bytes()
         return _make_image_block(img_data, label_num)
     else:
-        return _make_text_block(
-            item.get("content", ""), label_num,
-            align=item.get("align", "left")
-        )
+        content, inline_align = _extract_align(item.get("content", ""))
+        align = inline_align or item.get("align", "left")
+        return _make_text_block(content, label_num, align=align)
 
 
 def _build_nested(items: list[dict], start: int, label_start: int,
