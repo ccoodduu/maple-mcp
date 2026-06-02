@@ -434,7 +434,8 @@ def _decode_entities(text: str) -> str:
     text = text.replace('&it;', '*')
     text = html.unescape(text)
     # Normalize visible operator glyphs the encoder cannot re-parse
-    for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>')):
+    for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>'),
+                   ('π', 'Pi'), ('∞', 'infinity')):
         text = text.replace(_g, _a)
     # Remove invisible Unicode characters
     text = text.replace('\u2061', '')   # ApplyFunction

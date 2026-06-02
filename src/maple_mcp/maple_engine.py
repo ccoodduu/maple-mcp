@@ -545,9 +545,10 @@ class MapleEngine:
         self._ensure_kernel()
         self.execute('''
 TS2Str := proc(e)
-    local i, s, o, t;
+    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop;
     if type(e, string) then
         if member(e, {"true","false","bold","italic","normal","none","bold-italic"}) then return "" end if;
+        if e = "&infin;" then return "infinity" end if;
         return e
     end if;
     if not type(e, function) then return "" end if;
@@ -555,6 +556,35 @@ TS2Str := proc(e)
     s := "";
     if type(e, specfunc(Typesetting:-mcomplete)) then
         s := procname(op(1, e))
+    elif type(e, specfunc(Typesetting:-mrow))
+         and (has(op(1,e), "&int;") or has(op(1,e), "&Integral;"))
+         and (type(op(1,e), specfunc(Typesetting:-msubsup)) or type(op(1,e), specfunc(Typesetting:-mstyle))
+              or type(op(1,e), specfunc(Typesetting:-mo))) then
+        ops := [op(e)];
+        intop := ops[1];
+        if type(intop, specfunc(Typesetting:-msubsup)) then
+            lo := procname(op(2, intop)); hi := procname(op(3, intop))
+        else
+            lo := ""; hi := ""
+        end if;
+        dpos := 0;
+        for j from 2 to nops(ops) do
+            if has(ops[j], "&DifferentialD;") then dpos := j; break end if
+        end do;
+        integ := "";
+        if dpos = 0 then
+            for j from 2 to nops(ops) do
+                if not type(ops[j], specfunc(Typesetting:-mspace)) then integ := cat(integ, procname(ops[j])) end if
+            end do;
+            var := "x"
+        else
+            for j from 2 to dpos-1 do
+                if not type(ops[j], specfunc(Typesetting:-mspace)) then integ := cat(integ, procname(ops[j])) end if
+            end do;
+            if dpos < nops(ops) then var := procname(ops[dpos+1]) else var := "x" end if
+        end if;
+        if lo = "" then s := cat("Int(", integ, ", ", var, ")")
+        else s := cat("Int(", integ, ", ", var, " = ", lo, " .. ", hi, ")") end if
     elif type(e, specfunc(Typesetting:-mfrac)) then
         s := cat("(", procname(op(1,e)), ")/(", procname(op(2,e)), ")")
     elif type(e, specfunc(Typesetting:-msup)) then
@@ -624,7 +654,8 @@ end proc:
         result = result.replace('\u2145', '')   # DoubleStruckCapitalD
         result = result.replace('  ', ' ')
         # Normalize visible operator glyphs the encoder cannot re-parse
-        for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>')):
+        for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>'),
+                       ('π', 'Pi'), ('∞', 'infinity')):
             result = result.replace(_g, _a)
 
         # Detect highlight color in the raw Typesetting data
