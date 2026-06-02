@@ -440,15 +440,20 @@ class MapleEngine:
     @staticmethod
     def _notation_fixup(var: str) -> str:
         """Maple subsindets snippet: the &pm operator -> a PlusMinus sign, and
-        any name ending in PRIMESENT -> a prime superscript (f -> f')."""
+        any name with N trailing PRIMESENT markers -> N prime marks (f -> f',
+        g'' -> g'')."""
         return (
             f'{var} := subsindets({var}, specfunc(Typesetting:-mo), proc(x) '
             f'if StringTools:-Search("pm", op(1,x)) > 0 then Typesetting:-mo("&PlusMinus;") '
             f'else x end if end proc):\n'
-            f'{var} := subsindets({var}, specfunc(Typesetting:-mi), proc(x) local s; s := op(1,x); '
-            f'if type(s, string) and StringTools:-IsSuffix("PRIMESENT", s) then '
-            f'Typesetting:-mrow(Typesetting:-mi(s[1 .. -10]), '
-            f'Typesetting:-mo("\'", mathvariant = "normal", lspace = "0.1111111em", rspace = "0.0em")) '
+            f'{var} := subsindets({var}, specfunc(Typesetting:-mi), proc(x) '
+            f'local s, cnt; s := op(1,x); cnt := 0; '
+            f'if type(s, string) then '
+            f'while StringTools:-IsSuffix("PRIMESENT", s) do s := s[1 .. -10]; cnt := cnt + 1 end do '
+            f'end if; '
+            f'if cnt > 0 then '
+            f'Typesetting:-mrow(Typesetting:-mi(s), '
+            f'Typesetting:-mo(StringTools:-Repeat("\'", cnt), mathvariant = "normal", lspace = "0.1111111em", rspace = "0.0em")) '
             f'else x end if end proc):\n'
         )
 

@@ -168,10 +168,12 @@ def execute(statement: str) -> str:
     """Execute a Maple statement and return the result.
 
     Persistent session — variables are preserved between calls.
-    Does NOT modify the document.
+    Does NOT modify the document. Use this to COMPUTE (differentiate, solve,
+    integrate, evaluate); then write the RESULT into the document as display
+    math. Commands like diff/solve/int/eval belong HERE, never inside {{}}.
 
     Args:
-        statement: Maple expression (e.g. "int(x^2, x)", "solve(x^2-1, x)")
+        statement: Maple expression (e.g. "diff(x^3-4*x+1, x)", "solve(x^2-1, x)")
     """
     return engine.execute(statement)
 
@@ -211,13 +213,22 @@ def insert_after(match: str, items: list[dict],
     Greek letters use Maple names: Delta, rho, Omega (not \\delta).
     Subscripts use [...]: c[p], V[water] (not c_p, V_water).
     Combine Greek+variable with *: Delta*T shows Δ·T (DeltaT shows literal text).
+    Derivatives display as primes: f'(x), g''(x).
+
+    Math blocks DISPLAY expressions; they do NOT run commands. To differentiate,
+    solve, integrate, or evaluate, call `execute` FIRST, then write the RESULT
+    as math. Do NOT put diff(), solve(), int(), or eval() inside {{}} or code —
+    they do not typeset correctly. (Int(...) / Sum(...) with a CAPITAL letter are
+    fine: they are inert display notation, not commands.)
+    Coordinates/points: write in text ("punktet (2, 1)"), not as {{(2,1)}}.
 
     CRITICAL: Each {{}} must contain at most ONE = sign.
     {{a = b = c}} WILL FAIL. Use: {{a = b}} ⇔ {{c = d}}
 
-    Maple syntax examples:
-      {{Int(x^2, x = 0..3)}}     definite integral (capital I)
-      {{solve(x^2 - 1, x)}}      solve expression
+    Maple syntax examples (DISPLAY, not commands):
+      {{f(x) = x^3 - 4*x + 1}}    function expression
+      {{f'(x) = 3*x^2 - 4}}        derivative result (computed via execute)
+      {{Int(x^2, x = 0..3)}}      definite integral (capital I = display only)
       {{500*[[Omega]]}}           number with unit
       {{4180*[[J/(kg*degC)]]}}    compound unit
 
