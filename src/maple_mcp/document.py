@@ -1038,6 +1038,21 @@ def _make_block(item: dict, label_num: int) -> str:
         return _make_text_block(content, label_num, align=align)
 
 
+def _make_block_ctx(items: list[dict], i: int, label_num: int) -> str:
+    """_make_block, but on failure name the offending item (index + content) so an
+    atomic batch failure is debuggable instead of a bare snippet error."""
+    try:
+        return _make_block(items[i], label_num)
+    except ValueError as e:
+        it = items[i]
+        content = str(it.get("content", it))
+        if len(content) > 80:
+            content = content[:80] + "…"
+        raise ValueError(
+            f"item {i} (type={it.get('type', 'text')!r}, content={content!r}): {e}"
+        ) from e
+
+
 def _build_nested(items: list[dict], start: int, label_start: int,
                    parent_level: int = 0) -> tuple[list[str], int, int]:
     """Build blocks with nested section support.
@@ -1069,13 +1084,13 @@ def _build_nested(items: list[dict], start: int, label_start: int,
                     sub, i, label = _build_nested(items, i, label, level)
                     section_content.extend(sub)
                 else:
-                    section_content.append(_make_block(items[i], label))
+                    section_content.append(_make_block_ctx(items, i, label))
                     label += 1
                     i += 1
 
             blocks.append(_make_section(item["content"], level, section_content))
         else:
-            blocks.append(_make_block(item, label))
+            blocks.append(_make_block_ctx(items, i, label))
             label += 1
             i += 1
 

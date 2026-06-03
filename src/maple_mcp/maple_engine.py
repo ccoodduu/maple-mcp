@@ -599,6 +599,10 @@ class MapleEngine:
             return '', ''
         # Units:-Unit(...) / Unit(...) -> the [[unit]] markup the encoder expects.
         res_str = res_str.replace('Units:-Unit', 'Unit')
+        # Trim noisy trailing float zeros: 0.5000000000 -> 0.5, 375000. -> 375000.
+        import re as _re
+        res_str = _re.sub(r'(\.\d*?)0+(?=\D|$)', r'\1', res_str)
+        res_str = _re.sub(r'(\d)\.(?=\D|$)', r'\1', res_str)
 
         # 2. Typeset both halves via the normal encoder (handles units, etc.).
         in_b64, _ = self.encode_equation(input_expr)
@@ -654,9 +658,16 @@ class MapleEngine:
                 timeout=15
             )
             # Clean output: join lines, strip whitespace
+            import re
             lines = [l.strip() for l in result.stdout.strip().split('\n')
                      if l.strip() and not l.strip().startswith('>')]
-            return "\n".join(lines)
+            out = "\n".join(lines)
+            # Strip the kernel's GC status, which can interleave INTO the output
+            # mid-line: "bytes used=NNN, alloc=NNN, time=N.NN"
+            out = re.sub(
+                r'(?:kilo)?bytes used=[\d,]+,?\s*alloc=[\d,]+,?\s*time=[\d.]+\s*',
+                '', out)
+            return out.strip()
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return ""
 

@@ -46,6 +46,15 @@ Rules:
     `execute` tool then write the result. Do NOT put bare diff()/solve()/int()/eval()
     in a plain {{}}. Integrals to compute: {{Int(f, x = a..b) => value}} (NOT int() in a
     code block — it becomes an inert Int that computes nothing).
+  - IMPORTANT — two kinds of "compute":
+      {{expr => op}} BAKES the result in at write time (computed immediately, visible
+        in the document and in a screenshot). Use this for worked answers.
+      {!...!} / {=...=} are inserted as UNRUN input — they show only the input until
+        executed in Maple. They are NOT auto-run, and a screenshot does NOT run them.
+        Call the `run_executable` tool to compute them (runs only the unrun blocks).
+  - For {=...=}, put ONLY the expression to compute, not "LHS = RHS": {=(1/2)*m*v^2=}
+    shows "expr = result". {=E = (1/2)*m*v^2=} double-prints the LHS (E = expr = E =
+    result). To label it, write:  {{E[kin] =}} {=(1/2)*m*v^2=} .
   - Multiple = per {{}} is fine: chains like {{a = b = c}} or
     {{Q = m*c*Delta*T = 5000}} render correctly (incl. Greek). Put ⇕ between
     {{}} blocks when you prefer step-by-step isolation on separate lines.
@@ -91,6 +100,44 @@ def _png_to_image_content(png_data: bytes, max_width: int = 800,
     img.convert("RGB").save(buf, format="JPEG", quality=quality)
     b64 = base64.b64encode(buf.getvalue()).decode("ascii")
     return ImageContent(type="image", data=b64, mimeType="image/jpeg")
+
+
+def _images_under_budget(pngs: list[bytes],
+                         total_budget: int = 700_000) -> list[ImageContent]:
+    """Encode rendered page PNGs as ImageContent so the COMBINED payload stays
+    under the MCP ~1MB tool-result limit (base64 inflates ~1.33x). Splits the
+    budget across pages and steps JPEG width/quality down until each page fits.
+    A single small page is kept as crisp PNG."""
+    from PIL import Image
+    import io
+
+    n = max(1, len(pngs))
+    per = max(60_000, total_budget // n)
+    out: list[ImageContent] = []
+    for png in pngs:
+        img = Image.open(io.BytesIO(png))
+        if n == 1 and len(png) <= per and img.size[0] * img.size[1] < 200_000:
+            out.append(ImageContent(type="image",
+                                    data=base64.b64encode(png).decode("ascii"),
+                                    mimeType="image/png"))
+            continue
+        rgb = img.convert("RGB")
+        data = None
+        for max_w, q in [(1100, 80), (1000, 72), (900, 65), (820, 60),
+                         (720, 55), (620, 50), (520, 45)]:
+            im = rgb
+            if im.size[0] > max_w:
+                r = max_w / im.size[0]
+                im = im.resize((max_w, int(im.size[1] * r)), Image.LANCZOS)
+            buf = io.BytesIO()
+            im.save(buf, format="JPEG", quality=q)
+            data = buf.getvalue()
+            if len(data) <= per:
+                break
+        out.append(ImageContent(type="image",
+                                data=base64.b64encode(data).decode("ascii"),
+                                mimeType="image/jpeg"))
+    return out
 
 
 def _save_and_edit(edit_fn) -> str:
@@ -256,6 +303,11 @@ def insert_after(match: str, items: list[dict],
     (a)/(b); numbers+units as {{200*[[kg]]}}. FULL markup syntax + pitfall rules
     are in this server's instructions (and maple://help/markup) — follow them.
 
+    EXECUTION: {!...!} and {=...=} blocks are inserted UNRUN (input only). To
+    compute them, call the `run_executable` tool afterwards (it runs just the
+    unrun blocks). For a result baked in at write time, use {{expr => approximate}}
+    or {{expr => evaluate}} instead — those compute immediately.
+
     Args:
         match: Text substring to find the target block
         items: Content blocks to insert
@@ -336,6 +388,11 @@ def append_content(items: list[dict]) -> str:
 
     Supports nested sections: use type "heading" to create sections.
     Sub-headings (higher level number) nest inside parent sections.
+
+    {!...!} / {=...=} blocks are appended UNRUN — call the `run_executable` tool
+    afterwards to compute them (or use {{expr => approximate}} to bake a result in
+    at write time). The batch is atomic: if one item's math fails to encode, the
+    error names the item index and content.
 
     Args:
         items: Content blocks to append (same format as insert_after)
@@ -445,7 +502,7 @@ def screenshot_maple(match: str | None = None, pages: str | None = None,
 
     if not rendered:
         return "Render produced no pages."
-    return [_png_to_image_content(p, max_width=1100, quality=80) for p in rendered]
+    return _images_under_budget(rendered)
 
 
 def _window_grab_fallback(reason: str) -> list[TextContent | ImageContent] | str:
