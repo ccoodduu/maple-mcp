@@ -88,6 +88,38 @@ class TestDashAwareMatch:
         assert _match_rects_on_page(page, [needle], needle)
         doc.close()
 
+    def test_greek_letter_mangling(self):
+        """Greek mangles to Latin (Δ->'D'); fuzzy wildcard must still match."""
+        from maple_mcp.maple_render import _match_rects_on_page
+        doc, page = self._page("Beregn D for systemet")
+        needle = "Beregn Δ for systemet"
+        assert _match_rects_on_page(page, [needle], needle)
+        doc.close()
+
+    def test_math_operator_mangling(self):
+        """± extracts as some arbitrary letter; wildcard matches it."""
+        from maple_mcp.maple_render import _match_rects_on_page
+        doc, page = self._page("resultat 3 G 4 enheder")   # ± -> 'G' here
+        needle = "resultat 3 ± 4 enheder"
+        assert _match_rects_on_page(page, [needle], needle)
+        doc.close()
+
+    def test_symbol_collapses_to_space(self):
+        """Arrows/sqrt can extract as a space; '.' wildcard matches a space too."""
+        from maple_mcp.maple_render import _match_rects_on_page
+        doc, page = self._page("from f   g here")          # → -> ' '
+        needle = "from f → g here"
+        assert _match_rects_on_page(page, [needle], needle)
+        doc.close()
+
+    def test_danish_text_keeps_specificity(self):
+        """æøå extract correctly, so exact search hits without needing fuzzy."""
+        from maple_mcp.maple_render import _match_rects_on_page
+        doc, page = self._page("Måling af tæthed og bevægelse")
+        needle = "Måling af tæthed og bevægelse"
+        assert _match_rects_on_page(page, [needle], needle)
+        doc.close()
+
     def test_no_false_match(self):
         from maple_mcp.maple_render import _match_rects_on_page
         doc, page = self._page("totally different line of text")

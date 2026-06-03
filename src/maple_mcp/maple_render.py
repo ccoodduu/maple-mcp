@@ -122,12 +122,17 @@ def _export_pdf_standalone(mw_path: str, timeout: int = 60) -> str:
     return out_path
 
 
-# Maple's PDF export embeds a TimesNewRoman subset whose dash/minus glyphs have no
-# correct ToUnicode entry, so the PDF text layer mangles them: em-dash (—) extracts
-# as 'R', en-dash (–) as 'Q', minus (−) as 'L'. An exact search_for("— …") finds
-# nothing. We match fuzzily instead — every dash/minus variant in the needle becomes
-# a single-character wildcard, anchored by the surrounding (correctly-extracted) text.
-_DASHES = "-‐‑‒–—―−"
+# Maple's PDF export embeds a per-document font SUBSET with no ToUnicode map for
+# "exotic" glyphs, so the text layer mangles them — and the mangling is
+# position-in-subset dependent, NOT a fixed per-char map: the SAME em-dash extracts
+# as 'R' in one document and 'å' in another, and '·' can become ',' or 's' within a
+# single doc. ASCII and Latin-1 letters (incl. æøå) extract fine; dashes, math
+# operators (× · ± ≈ ≤ ≥ ≠ √ ∞ ∫ ∑ → ⇒), Greek (α…Ω) and symbols (© § €) do not —
+# some even collapse to a space. So we can't substitute a known character; instead we
+# match fuzzily, turning every non-ASCII char (plus the ASCII hyphen, which users
+# conflate with — –) into a single-char wildcard anchored by the surrounding ASCII
+# text, which always extracts correctly.
+_DASHY = set("-‐‑‒–—―−")   # ASCII hyphen + dashes: users type these interchangeably
 
 
 def _char_stream(page):
@@ -155,10 +160,10 @@ def _fuzzy_rects(page, needle: str) -> list:
         return []
     parts = []
     for ch in needle:
-        if ch in _DASHES:
-            parts.append(r"\S")          # whatever the dash became (R/Q/L/…)
-        elif ch.isspace():
+        if ch.isspace():
             parts.append(r"\s+")
+        elif ord(ch) > 0x7E or ch in _DASHY:
+            parts.append(r".")           # whatever the glyph mangled to (incl. a space)
         else:
             parts.append(_re.escape(ch))
     m = _re.compile("".join(parts)).search(s)
@@ -171,17 +176,19 @@ def _fuzzy_rects(page, needle: str) -> list:
     return [rect]
 
 
-def _dash_free_segments(needle: str) -> list[str]:
-    """Longest-first dash-free chunks of a needle, for a last-ditch exact search."""
+def _anchor_segments(needle: str) -> list[str]:
+    """Longest-first runs of reliably-extracted ASCII text (split on any non-ASCII
+    char, '/', or '|'), for a last-ditch exact search when fuzzy matching fails."""
     import re as _re
     return sorted(
-        {s.strip() for s in _re.split(r'[—–/|]+', needle) if len(s.strip()) >= 4},
+        {s.strip() for s in _re.split(r'(?:[^\x00-\x7E]|[/|])+', needle)
+         if len(s.strip()) >= 4},
         key=len, reverse=True)
 
 
 def _match_rects_on_page(page, needles: list[str], decoded: str) -> list:
     """Rects for the first strategy that hits on this page: exact search of the
-    given needles, then dash-aware fuzzy match, then longest dash-free segment."""
+    given needles, then glyph-mangling-aware fuzzy match, then longest ASCII run."""
     for cand in needles:
         r = page.search_for(cand)
         if r:
@@ -189,7 +196,7 @@ def _match_rects_on_page(page, needles: list[str], decoded: str) -> list:
     r = _fuzzy_rects(page, decoded)
     if r:
         return r
-    for seg in _dash_free_segments(decoded):
+    for seg in _anchor_segments(decoded):
         r = page.search_for(seg)
         if r:
             return r
