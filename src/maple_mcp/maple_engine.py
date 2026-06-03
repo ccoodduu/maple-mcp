@@ -535,6 +535,11 @@ class MapleEngine:
             f'{body}\n'
             f'ts := Typesetting:-mrow({mrow}):\n'
             f'{self._notation_fixup("ts")}'
+            # Greek compounds: Delta*v was preprocessed to "Deltav"; render it as
+            # Δv (the main path does this too, but chains skipped it).
+            f'ts := subsindets(ts, specfunc(Typesetting:-mi), proc(x) local s; '
+            f's := op(1,x); if type(s, string) and length(s) > 5 and s[1..5] = "Delta" '
+            f'then Typesetting:-mi(cat("&Delta;", s[6..-1])) else x end if end proc):\n'
             f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
             f' style=TwoDimInput, executable=false)));\n'
         )

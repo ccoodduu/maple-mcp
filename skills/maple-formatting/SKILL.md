@@ -22,7 +22,9 @@ and read `maple://help/markup` if unsure. The gotchas it covers (don't forget th
 
 - Write **ASCII input**; it renders as 2D math. Use `:=` (not the glyph `≔`), `*` (not `·`),
   `-` (not `−`), `x^2`, `c[p]`. Never paste rendered glyphs back as input.
-- **One `=` per `{{}}`**; put `⇕` between isolation steps.
+- **Multiple `=` per `{{}}` is fine** — chains like `{{a = b = c}}` or
+  `{{Q = m*c*Delta*T = 5000}}` render. Put `⇕` between blocks when you want
+  isolation steps on separate lines (a style choice, not a requirement).
 - `{{}}` only **DISPLAYS**. To COMPUTE, use `{{expr => op}}` (op = solve / factor / simplify /
   expand / evaluate=exact / approximate=decimal / value) or the `execute` tool, then write
   the result. Never put bare `diff()/solve()/int()/eval()` inside a `{{}}`.

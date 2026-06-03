@@ -46,8 +46,9 @@ Rules:
     `execute` tool then write the result. Do NOT put bare diff()/solve()/int()/eval()
     in a plain {{}}. Integrals to compute: {{Int(f, x = a..b) => value}} (NOT int() in a
     code block — it becomes an inert Int that computes nothing).
-  - Keep ONE = per {{}} with ⇕ between steps (always renders). A chain {{a = b = c}}
-    also encodes, but a Greek letter inside a chain may render as literal text.
+  - Multiple = per {{}} is fine: chains like {{a = b = c}} or
+    {{Q = m*c*Delta*T = 5000}} render correctly (incl. Greek). Put ⇕ between
+    {{}} blocks when you prefer step-by-step isolation on separate lines.
   - Fractions ALWAYS as (numerator)/(denominator). Greek by Maple name: Delta, rho,
     Omega; combine with a variable via *: Delta*T renders ΔT. Subscripts: c[p] or c_p.
     Derivatives as primes: f'(x), g''(x). Unknowns: {{V = ?}}, {{E[kin] = ?}}.
@@ -251,9 +252,9 @@ def insert_after(match: str, items: list[dict],
     {!expr!} executable (output below), {=expr=} executable (inline output),
     {{expr => op}} operation arrow (op: solve/factor/simplify/expand/evaluate/
     approximate), [[unit]] units, **bold**, {color:R,G,B}..{/color}, [align:right].
-    Each {{}} holds at most ONE = sign; fractions as (a)/(b); numbers+units as
-    {{200*[[kg]]}}. FULL markup syntax + pitfall rules are in this server's
-    instructions (and the maple://help/markup resource) — follow them.
+    Multiple = per {{}} is fine ({{a = b = c}} chains render); fractions as
+    (a)/(b); numbers+units as {{200*[[kg]]}}. FULL markup syntax + pitfall rules
+    are in this server's instructions (and maple://help/markup) — follow them.
 
     Args:
         match: Text substring to find the target block
