@@ -428,6 +428,9 @@ class MapleEngine:
         # symbol (ΔT, Δx) rather than Delta·X with a multiplication dot.
         expr = re.sub(r'Delta\*([A-Za-z])\b', r'Delta\1', expr)
         expr = expr.replace('+/-', ' &pm ').replace('+-', ' &pm ')
+        # "?" (unknown marker, e.g. {{E[kin] = ?}}) is not parseable Maple, so
+        # stand it in with a name and turn it back into "?" in _notation_fixup.
+        expr = expr.replace('?', ' QQMARKQQ ')
         # Mark derivative primes WITHOUT mangling Maple single-quoted strings
         # such as Unit('Omega') (whose closing quote also follows a letter).
         out, in_quote = [], False
@@ -462,6 +465,9 @@ class MapleEngine:
             f'if cnt > 0 then '
             f'Typesetting:-mrow(Typesetting:-mi(s), '
             f'Typesetting:-mo(StringTools:-Repeat("\'", cnt), mathvariant = "normal", lspace = "0.1111111em", rspace = "0.0em")) '
+            f'else x end if end proc):\n'
+            f'{var} := subsindets({var}, specfunc(Typesetting:-mi), proc(x) '
+            f'if op(1,x) = "QQMARKQQ" then Typesetting:-mo("?", mathvariant = "normal") '
             f'else x end if end proc):\n'
         )
 
@@ -538,10 +544,12 @@ class MapleEngine:
         content_b64 = ''.join(raw.split())
         return content_b64, content_b64
 
-    # Friendly operation names -> Maple commands.
+    # Friendly operation names -> Maple commands. "evaluate" is EXACT (1/3+1/6 ->
+    # 1/2); use "approximate" for a decimal (-> 0.5).
     _OP_ALIASES = {
-        "evaluate": "evalf", "approximate": "evalf", "approx": "evalf",
-        "numeric": "evalf", "isolate": "solve", "result": "value",
+        "evaluate": "value", "exact": "value", "result": "value",
+        "approximate": "evalf", "approx": "evalf", "numeric": "evalf",
+        "isolate": "solve",
     }
     # Allowed context-panel operations (after alias resolution). Unknown ops fail
     # loudly rather than silently emitting an unapplied function like foo(x).
@@ -699,6 +707,8 @@ TS2Str := proc(e)
         end if
     elif type(e, specfunc(Typesetting:-msqrt)) then
         s := cat("sqrt(", procname(op(1,e)), ")")
+    elif type(e, specfunc(Typesetting:-mover)) and has(e, "&rarr;") then
+        s := cat(" --", procname(op(2,e)), "--> ")
     else
         for i from 1 to nops(e) do
             o := op(i, e);
@@ -728,9 +738,10 @@ end proc:
             f'printf("%s", TS2Str(op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m"))))'
         )
         if "Error" in result or "Typesetting" in result:
-            result = self.execute(
-                f'sprintf("%a", op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m")))'
-            )
+            # TS2Str could not fully decode this structure. The raw %a dump is
+            # unreadable (a giant Typesetting:-mrow(...) serialization), so return
+            # a clean marker instead — the rendering is fine, verify via screenshot.
+            result = "[equation — verify with screenshot_maple]"
 
         try:
             os.unlink(tmp)
