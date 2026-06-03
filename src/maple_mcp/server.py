@@ -346,6 +346,33 @@ def append_content(items: list[dict]) -> str:
 
 
 @mcp.tool()
+def run_executable() -> str:
+    """Execute the executable math that hasn't been run yet, so results appear.
+
+    Runs every {!...!} / {=...=} / code block that currently has NO output (the
+    ones just written) in Maple's live kernel, then saves — so the computed
+    results show in the document without manually pressing Enter. Existing or
+    hand-edited results (which already have output) are left untouched.
+
+    Call this after writing a solution (or a part of it) when you want the
+    executable calculations to actually compute. For a single computed value you
+    just want displayed, {{expr => approximate}} / {{expr => evaluate}} is simpler.
+    Requires Maple to be open with the agent loaded.
+    """
+    path = _get_path()
+    if isinstance(path, str):
+        return path
+    from maple_mcp.maple_reload import eval_new_in_maple
+    resp = eval_new_in_maple()
+    if resp is None:
+        return ("Could not reach Maple's agent. Is Maple open, and was it "
+                "restarted after the agent was updated?")
+    if resp.startswith("error"):
+        return f"Execution failed: {resp}"
+    return f"Done — executed unevaluated groups ({resp})."
+
+
+@mcp.tool()
 def undo() -> str:
     """Undo the last edit (any insert, replace, or delete operation).
 

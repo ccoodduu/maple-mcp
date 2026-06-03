@@ -94,3 +94,21 @@ def reload_in_maple_async(file_path: str):
     threading.Thread(
         target=reload_in_maple, args=(file_path,), daemon=True
     ).start()
+
+
+def eval_new_in_maple(timeout: int = 120) -> str | None:
+    """Ask the agent to run the executable groups that have no output yet (the
+    just-written ones), wait for the kernel, and save. Returns the agent's
+    response string, or None if the agent isn't reachable. Needs a long socket
+    timeout because execution + save happen before the agent replies."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect(("127.0.0.1", AGENT_PORT))
+        s.sendall(b"evalnew\n")
+        resp = s.recv(4096).decode().strip()
+        s.close()
+        return resp
+    except (ConnectionRefusedError, socket.timeout, OSError):
+        return None

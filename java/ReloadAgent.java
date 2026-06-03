@@ -39,6 +39,8 @@ public class ReloadAgent {
                             out.println(save());
                         } else if (cmd != null && cmd.startsWith("export ")) {
                             out.println(exportPdf(cmd.substring(7).trim()));
+                        } else if ("evalnew".equals(cmd)) {
+                            out.println(evalNew());
                         } else if ("getpath".equals(cmd)) {
                             out.println(getOpenPath());
                         } else {
@@ -115,6 +117,76 @@ public class ReloadAgent {
             return "error: empty output";
         } catch (Throwable t) {
             log("export error: " + t);
+            return "error: " + t;
+        }
+    }
+
+    // Execute ONLY the executable groups that have no output yet (i.e. the ones
+    // just written by the MCP). Existing/manually-edited results keep their
+    // output and are left untouched. Mirrors Maple's "Execute Worksheet" command
+    // (WmiExecutionVisitor + WmiExecuteGroups) but filters to getOutput()==null.
+    private static String evalNew() {
+        log("evalnew requested");
+        try {
+            final Object wnd = getActiveWindow();
+            if (wnd == null) return "error: no active window";
+            Object view = wnd.getClass().getMethod("getWorksheetView").invoke(wnd);
+            if (view == null) return "error: no view";
+            final Object model = view.getClass().getMethod("getModel").invoke(view);
+
+            Class<?> wmiModel = Class.forName("com.maplesoft.mathdoc.model.WmiModel");
+            Class<?> lock = Class.forName("com.maplesoft.mathdoc.model.WmiModelLock");
+            java.util.List<Object> todo = new java.util.ArrayList<>();
+
+            lock.getMethod("writeLock", wmiModel, boolean.class).invoke(null, model, true);
+            try {
+                Class<?> visitorC = Class.forName(
+                    "com.maplesoft.worksheet.controller.WmiExecutionVisitor");
+                Object visitor = visitorC.getDeclaredConstructor().newInstance();
+                Class<?> searcher = Class.forName("com.maplesoft.mathdoc.model.WmiModelSearcher");
+                Class<?> svisitor = Class.forName("com.maplesoft.util.WmiSearchVisitor");
+                searcher.getMethod("visitDepthFirst", wmiModel, svisitor)
+                    .invoke(null, model, visitor);
+                java.util.List<?> all = (java.util.List<?>)
+                    visitorC.getMethod("getExecutionGroups").invoke(visitor);
+                for (Object g : all) {
+                    Object out = g.getClass().getMethod("getOutput").invoke(g);
+                    boolean canExec = (boolean) g.getClass().getMethod("canExecute").invoke(g);
+                    if (out == null && canExec) todo.add(g);
+                }
+            } finally {
+                lock.getMethod("writeUnlock", wmiModel).invoke(null, model);
+            }
+            log("evalnew: " + todo.size() + " unevaluated group(s)");
+            if (todo.isEmpty()) return "ok: 0";
+
+            Class<?> execC = Class.forName(
+                "com.maplesoft.worksheet.controller.edit.WmiExecuteGroups");
+            Object exec = execC.getConstructor(java.util.List.class).newInstance(todo);
+            execC.getMethod("start").invoke(exec);
+
+            // Wait for the kernel to finish (poll isAnythingExecutingInDocument).
+            Object doc = wmiModel.getMethod("getDocument").invoke(model);
+            Class<?> egm = Class.forName("com.maplesoft.worksheet.model.WmiExecutionGroupModel");
+            Class<?> mdm = Class.forName("com.maplesoft.mathdoc.model.WmiMathDocumentModel");
+            java.lang.reflect.Method isExec =
+                egm.getMethod("isAnythingExecutingInDocument", mdm);
+            Thread.sleep(400);
+            for (int i = 0; i < 900; i++) {  // up to ~90s
+                if (!((boolean) isExec.invoke(null, doc))) break;
+                Thread.sleep(100);
+            }
+
+            final String[] result = {"ok: " + todo.size()};
+            javax.swing.SwingUtilities.invokeAndWait(() -> {
+                try { wnd.getClass().getMethod("saveWindowContents").invoke(wnd); }
+                catch (Exception e) { log("evalnew save error: " + e.getMessage()); }
+            });
+            log("evalnew complete: " + result[0]);
+            return result[0];
+        } catch (Throwable t) {
+            log("evalnew error: " + t);
+            if (t.getCause() != null) log("  cause: " + t.getCause());
             return "error: " + t;
         }
     }
