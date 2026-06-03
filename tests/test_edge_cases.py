@@ -52,6 +52,50 @@ class TestTS2StrCoverage:
         assert decoded.rstrip().endswith(":"), f"colon lost: {decoded}"
 
 
+class TestDashAwareMatch:
+    """render_pages must match headings containing em/en-dashes even though
+    Maple's PDF text layer mangles those glyphs (— -> 'R', – -> 'Q', − -> 'L')."""
+
+    def _page(self, text):
+        fitz = pytest.importorskip("pymupdf")
+        doc = fitz.open()
+        page = doc.new_page()
+        page.insert_text((72, 72), text, fontsize=12)
+        return doc, page
+
+    def test_emdash_needle_matches_mangled_R(self):
+        from maple_mcp.maple_render import _match_rects_on_page
+        doc, page = self._page("Opgave 4 R Energi og bevaegelse")
+        needle = "Opgave 4 — Energi og bevaegelse"
+        rects = _match_rects_on_page(page, [needle], needle)
+        assert rects, "em-dash heading must match its mangled 'R' text-layer form"
+        doc.close()
+
+    def test_endash_and_minus_match(self):
+        from maple_mcp.maple_render import _match_rects_on_page
+        for mangled, needle in [("en Q dash", "en – dash"),
+                                ("Minus 3 L 1", "Minus 3 − 1")]:
+            doc, page = self._page(mangled)
+            assert _match_rects_on_page(page, [needle], needle), \
+                f"{needle!r} should match {mangled!r}"
+            doc.close()
+
+    def test_hyphen_needle_tolerates_emdash_doc(self):
+        """User types a hyphen where the doc actually has an em-dash -> still hits."""
+        from maple_mcp.maple_render import _match_rects_on_page
+        doc, page = self._page("Opgave 4 R Energi")
+        needle = "Opgave 4 - Energi"
+        assert _match_rects_on_page(page, [needle], needle)
+        doc.close()
+
+    def test_no_false_match(self):
+        from maple_mcp.maple_render import _match_rects_on_page
+        doc, page = self._page("totally different line of text")
+        needle = "Opgave 4 — Energi"
+        assert not _match_rects_on_page(page, [needle], needle)
+        doc.close()
+
+
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):
         """Empty document should return empty list."""

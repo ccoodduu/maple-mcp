@@ -122,6 +122,80 @@ def _export_pdf_standalone(mw_path: str, timeout: int = 60) -> str:
     return out_path
 
 
+# Maple's PDF export embeds a TimesNewRoman subset whose dash/minus glyphs have no
+# correct ToUnicode entry, so the PDF text layer mangles them: em-dash (—) extracts
+# as 'R', en-dash (–) as 'Q', minus (−) as 'L'. An exact search_for("— …") finds
+# nothing. We match fuzzily instead — every dash/minus variant in the needle becomes
+# a single-character wildcard, anchored by the surrounding (correctly-extracted) text.
+_DASHES = "-‐‑‒–—―−"
+
+
+def _char_stream(page):
+    """Flatten a page's chars into (text, [bbox]) in reading order (rawdict)."""
+    try:
+        import pymupdf as fitz
+    except ImportError:
+        import fitz
+    chars, boxes = [], []
+    for block in page.get_text("rawdict").get("blocks", []):
+        for line in block.get("lines", []):
+            for span in line.get("spans", []):
+                for c in span.get("chars", []):
+                    chars.append(c["c"])
+                    boxes.append(fitz.Rect(c["bbox"]))
+    return "".join(chars), boxes
+
+
+def _fuzzy_rects(page, needle: str) -> list:
+    """Locate `needle` on the page, tolerating Maple's dash/minus glyph mangling.
+    Returns a one-element list with the union bbox of the match, or []."""
+    import re as _re
+    s, boxes = _char_stream(page)
+    if not s:
+        return []
+    parts = []
+    for ch in needle:
+        if ch in _DASHES:
+            parts.append(r"\S")          # whatever the dash became (R/Q/L/…)
+        elif ch.isspace():
+            parts.append(r"\s+")
+        else:
+            parts.append(_re.escape(ch))
+    m = _re.compile("".join(parts)).search(s)
+    if not m or m.end() == m.start():
+        return []
+    span = boxes[m.start():m.end()]
+    rect = span[0]
+    for b in span[1:]:
+        rect |= b
+    return [rect]
+
+
+def _dash_free_segments(needle: str) -> list[str]:
+    """Longest-first dash-free chunks of a needle, for a last-ditch exact search."""
+    import re as _re
+    return sorted(
+        {s.strip() for s in _re.split(r'[—–/|]+', needle) if len(s.strip()) >= 4},
+        key=len, reverse=True)
+
+
+def _match_rects_on_page(page, needles: list[str], decoded: str) -> list:
+    """Rects for the first strategy that hits on this page: exact search of the
+    given needles, then dash-aware fuzzy match, then longest dash-free segment."""
+    for cand in needles:
+        r = page.search_for(cand)
+        if r:
+            return r
+    r = _fuzzy_rects(page, decoded)
+    if r:
+        return r
+    for seg in _dash_free_segments(decoded):
+        r = page.search_for(seg)
+        if r:
+            return r
+    return []
+
+
 def _parse_page_spec(spec: str, n: int) -> list[int]:
     """Parse a 1-based page spec ('2', '2-3', '1,3,5') to sorted 0-based indices."""
     out: set[int] = set()
@@ -171,26 +245,14 @@ def render_pages(mw_path: str, match: str | None = None, pages: str | None = Non
             # Try the literal match, then a version with \uXXXX escapes decoded
             # (a client may pass "bevægelse" un-decoded instead of "bevægelse").
             import re as _re
-            candidates = [match]
             decoded = _re.sub(r'\\u([0-9a-fA-F]{4})',
                               lambda m: chr(int(m.group(1), 16)), match)
-            if decoded != match:
-                candidates.append(decoded)
-            # Fallback: the PDF text layer can mangle em/en-dashes (— may extract
-            # as "R") and other punctuation, so also try the longest dash-free
-            # segment of the match (e.g. "Opgave 4 — Energi" -> "Energi").
-            for seg in sorted(
-                    {s.strip() for s in _re.split(r'[—–/|]+', decoded)
-                     if len(s.strip()) >= 4},
-                    key=len, reverse=True):
-                if seg not in candidates:
-                    candidates.append(seg)
-            found = []
-            for cand in candidates:
-                found = [(i, r) for i in range(n)
-                         for r in [doc[i].search_for(cand)] if r]
-                if found:
-                    break
+            needles = [match] + ([decoded] if decoded != match else [])
+            # Per page, try exact search, then dash-aware fuzzy match (em-dash etc.
+            # mangle in the PDF text layer), then a dash-free segment.
+            found = [(i, rects) for i in range(n)
+                     for rects in [_match_rects_on_page(doc[i], needles, decoded)]
+                     if rects]
             if not found:
                 raise ValueError(
                     f"No page contains text matching {match!r}. Typeset math has no "
