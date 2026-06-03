@@ -22,9 +22,11 @@ and read `maple://help/markup` if unsure. The gotchas it covers (don't forget th
 
 - Write **ASCII input**; it renders as 2D math. Use `:=` (not the glyph `≔`), `*` (not `·`),
   `-` (not `−`), `x^2`, `c[p]`. Never paste rendered glyphs back as input.
-- **Multiple `=` per `{{}}` is fine** — chains like `{{a = b = c}}` or
-  `{{Q = m*c*Delta*T = 5000}}` render. Put `⇕` between blocks when you want
-  isolation steps on separate lines (a style choice, not a requirement).
+- **Separate chained relations with a double arrow — NOT several `=` in one block.**
+  This is my style. Use one `=` per `{{}}` and join the steps with `⇔`:
+  horizontally on the same line — `{{a = b}} ⇔ {{b = c}}` — or vertically with `⇕`
+  on its own line (see Solution Flow). The MCP *supports* `{{a = b = c}}`, but I
+  prefer the split; do not write multiple `=` in one block.
 - `{{}}` only **DISPLAYS**. To COMPUTE, use `{{expr => op}}` (op = solve / factor / simplify /
   expand / evaluate=exact / approximate=decimal / value) or the `execute` tool, then write
   the result. Never put bare `diff()/solve()/int()/eval()` inside a `{{}}`.
@@ -81,13 +83,18 @@ Common intro phrases: "X er givet ved:", "Formlen for X lyder:", "Ud fra [lov] k
 "For at finde X bruges denne formel:".
 
 ### 2. Isolate Step-by-Step
-Show algebraic manipulation with `⇕` between each step:
+ONE `=` per `{{}}` — never several `=` in one block. Join the steps with a double
+arrow, vertically (`⇕` on its own line) for isolation:
 ```
 {{F[op] = rho[væske]*g*V}}
 ⇕
 {{V = (F[op])/(rho[væske]*g)}}
 ```
-Each line has exactly one equation in `{{}}`. Show every meaningful step.
+or horizontally (`⇔` on the same line) for equivalent forms:
+```
+{{a = b}} ⇔ {{b = c}}
+```
+Show every meaningful step.
 
 ### 3. Substitute and Compute
 Insert the known values and compute. Use `{=...=}` for an inline result, or
