@@ -29,10 +29,12 @@ def _new_pdf_path() -> str:
 
 
 def _export_pdf_via_agent(mw_path: str, timeout: int) -> str | None:
-    """Render via the in-JVM agent (the user's running Maple). That process keeps
-    its screen device even when the screen is locked, so it works headless when
-    the standalone JVM cannot. Returns a PDF path, or None if the agent is not
-    running / the new `export` command is unavailable / it failed."""
+    """Render via the in-JVM agent (the user's running Maple). FAST — it reuses
+    the already-warm JVM (no ~4s cold start) and keeps its display even when the
+    screen is locked. Returns a PDF path, or None if the agent is unreachable
+    (Maple not running / export command unavailable). Raises TimeoutError if the
+    agent is reachable but the export hangs (e.g. a doc with live embedded
+    components) — the standalone route would hang identically, so don't retry it."""
     import socket
     from maple_mcp.maple_reload import AGENT_PORT
 
@@ -44,7 +46,11 @@ def _export_pdf_via_agent(mw_path: str, timeout: int) -> str | None:
         s.sendall(f"export {mw_path}|{out_path}\n".encode())
         resp = s.recv(4096).decode().strip()
         s.close()
-    except (ConnectionRefusedError, socket.timeout, OSError):
+    except socket.timeout:
+        if os.path.exists(out_path):
+            os.unlink(out_path)
+        raise TimeoutError("Maple export hung")
+    except (ConnectionRefusedError, OSError):
         resp = None
 
     if resp == "ok" and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
@@ -57,18 +63,20 @@ def _export_pdf_via_agent(mw_path: str, timeout: int) -> str | None:
 def export_pdf(mw_path: str, timeout: int = 60) -> str:
     """Render a .mw to a temp PDF via Maple's export classes. Returns the PDF path.
 
-    Tries a standalone export JVM first. If that fails because no desktop session
-    is available (locked screen), falls back to the in-JVM agent — the running
-    Maple GUI still has a display. Raises RuntimeError if all routes fail.
+    Prefers the in-JVM agent (the running Maple): ~3x faster (no JVM cold start)
+    and works even with the screen locked. Falls back to a standalone export JVM
+    when Maple isn't running. Raises RuntimeError if all routes fail.
     """
     try:
-        return _export_pdf_standalone(mw_path, timeout)
-    except RuntimeError as e:
-        if "desktop session" in str(e):
-            via_agent = _export_pdf_via_agent(mw_path, timeout)
-            if via_agent:
-                return via_agent
-        raise
+        via_agent = _export_pdf_via_agent(mw_path, timeout)
+    except TimeoutError:
+        raise RuntimeError(
+            "Maple's export hung — the document may contain live embedded "
+            "components (e.g. an embedded table). Try a smaller part with "
+            "match= or pages=.")
+    if via_agent:
+        return via_agent
+    return _export_pdf_standalone(mw_path, timeout)
 
 
 def _export_pdf_standalone(mw_path: str, timeout: int = 60) -> str:
