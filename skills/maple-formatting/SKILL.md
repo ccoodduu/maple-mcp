@@ -56,6 +56,17 @@ and read `maple://help/markup` if unsure. The gotchas it covers (don't forget th
 If the document has a `TITLE:` block at the top, the first `#` heading is the first
 section. Don't add an extra title.
 
+### Load the Units package (for executable unit math)
+When the solution does executable calculations with units (`{!...!}` / `{=...=}`
+containing `[[...]]`), load the **Units package** once at the very top of the document so
+the live kernel computes with units:
+```
+{!with(Units:-Simple):!}
+```
+(`Units:-Simple` = `Units[Simple]`; it handles `degC → °C` and compound units.) Display-only
+units in `{{}}` are handled automatically and don't need it — but always load it for physics
+afleveringer with unit calculations.
+
 ## Solution Flow Pattern (Shared)
 
 Both physics and mathematics follow the same core sequence:
