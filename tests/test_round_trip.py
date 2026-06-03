@@ -138,3 +138,13 @@ class TestOperationArrow:
         engine._last_encode_error = None
         _, b64 = engine.encode_equation("x^2 => bogusop")
         assert not b64
+
+    @pytest.mark.parametrize("expr", [
+        "g''(0) = 6*0 - 6 => evaluate",
+        "g'(1) = 3*1^2 - 6*1 => evaluate",
+    ])
+    def test_operation_with_primes(self, engine, expr):
+        """Primes on the LHS must not crash the compute step (g'' is display)."""
+        engine._last_encode_error = None
+        _, b64 = engine.encode_equation(expr)
+        assert b64, f"prime operation failed: {engine._last_encode_error}"

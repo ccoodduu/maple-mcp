@@ -146,18 +146,25 @@ def _save_and_edit(edit_fn) -> str:
         return path
 
     readback = edit_fn(str(path))
-    reload_in_maple(str(path))
+    reloaded = reload_in_maple(str(path))
 
-    # Surface run_executable right when it's needed: executable blocks read back
-    # as {!...!} and are inserted UNRUN (run_executable itself may be a deferred
-    # tool the model hasn't loaded yet).
     hint = ""
+    # The edit ALWAYS lands in the .mw file. Refreshing the open Maple window is a
+    # separate channel (the agent, or an AHK fallback) and can fail on its own —
+    # distinct from the kernel agent used by run_executable.
+    if not reloaded:
+        hint += ("\n\nNote: the edit was written to the file, but Maple's open "
+                 "window could not be refreshed — it may be busy or waiting on a "
+                 "dialog (e.g. a 'Save changes?' prompt). Dismiss it, or reopen the "
+                 "file; the change IS saved.")
+    # Surface run_executable right when it's needed: executable blocks read back
+    # as {!...!} and are inserted UNRUN (run_executable may be a deferred tool).
     if readback and "{!" in readback:
-        hint = ("\n\nNote: executable block(s) were inserted UNRUN — call the "
-                "run_executable tool to compute them so their results appear.")
+        hint += ("\n\nNote: executable block(s) were inserted UNRUN — call the "
+                 "run_executable tool to compute them so their results appear.")
     if readback:
         return f"Done, reads as:\n{readback}{hint}"
-    return "Done."
+    return "Done." + hint
 
 
 def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:

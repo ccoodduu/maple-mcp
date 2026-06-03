@@ -589,9 +589,13 @@ class MapleEngine:
         #    holds its argument unevaluated, so we must round-trip through source.
         #    Wrap in a list so a multi-valued result (e.g. solve -> 2, -2) stays a
         #    single convert() argument; unwrap when there is just one value.
+        # Primes (f', g'') are not valid Maple input — running value(g''(0)=...)
+        # crashes the parser. Mark them as placeholder names for the COMPUTATION
+        # (the display half keeps the real primes); the result is decoded back.
+        compute_expr = self._preprocess_notation(input_expr)
         res_str = self._execute_clean(
             f'{units_pre}'
-            f'local _r: _r := [{cmd}({input_expr})]:\n'
+            f'local _r: _r := [{cmd}({compute_expr})]:\n'
             f'printf("%s", convert(`if`(nops(_r) = 1, _r[1], _r), string));'
         ).strip()
         if not res_str or 'Error' in res_str or 'error' in res_str:

@@ -168,8 +168,20 @@ def render_pages(mw_path: str, match: str | None = None, pages: str | None = Non
         out: list[bytes] = []
 
         if match:
-            found = [(i, doc[i].search_for(match)) for i in range(n)]
-            found = [(i, rects) for i, rects in found if rects]
+            # Try the literal match, then a version with \uXXXX escapes decoded
+            # (a client may pass "bevægelse" un-decoded instead of "bevægelse").
+            import re as _re
+            candidates = [match]
+            decoded = _re.sub(r'\\u([0-9a-fA-F]{4})',
+                              lambda m: chr(int(m.group(1), 16)), match)
+            if decoded != match:
+                candidates.append(decoded)
+            found = []
+            for cand in candidates:
+                found = [(i, r) for i in range(n)
+                         for r in [doc[i].search_for(cand)] if r]
+                if found:
+                    break
             if not found:
                 raise ValueError(
                     f"No page contains text matching {match!r}. Typeset math has no "
