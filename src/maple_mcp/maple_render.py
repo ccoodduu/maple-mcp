@@ -176,6 +176,15 @@ def render_pages(mw_path: str, match: str | None = None, pages: str | None = Non
                               lambda m: chr(int(m.group(1), 16)), match)
             if decoded != match:
                 candidates.append(decoded)
+            # Fallback: the PDF text layer can mangle em/en-dashes (— may extract
+            # as "R") and other punctuation, so also try the longest dash-free
+            # segment of the match (e.g. "Opgave 4 — Energi" -> "Energi").
+            for seg in sorted(
+                    {s.strip() for s in _re.split(r'[—–/|]+', decoded)
+                     if len(s.strip()) >= 4},
+                    key=len, reverse=True):
+                if seg not in candidates:
+                    candidates.append(seg)
             found = []
             for cand in candidates:
                 found = [(i, r) for i in range(n)

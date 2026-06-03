@@ -44,6 +44,13 @@ class TestTS2StrCoverage:
         decoded = engine.decode_equation(b64)
         assert "[[25" not in decoded, f"paren mis-read as unit block: {decoded}"
 
+    @pytest.mark.parametrize("expr", ["with(Units:-Simple):", "f(x) := 3*x^2:"])
+    def test_trailing_colon_preserved(self, engine, expr):
+        """A trailing ':' (output suppression) must survive encoding."""
+        _, b64 = engine.encode_equation(expr)
+        decoded = engine.decode_equation(b64)
+        assert decoded.rstrip().endswith(":"), f"colon lost: {decoded}"
+
 
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):

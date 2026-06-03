@@ -208,6 +208,9 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
             suffix = ""
             if entry.get("output"):
                 suffix += f" -> {'; '.join(entry['output'])}"
+            elif t == "code" or "{!" in content or "{=" in content:
+                # An executable block with no output hasn't been run yet.
+                suffix += "  [NOT RUN — call run_executable]"
             if entry.get("align"):
                 suffix += f" [align:{entry['align']}]"
 

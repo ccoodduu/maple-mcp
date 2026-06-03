@@ -179,7 +179,12 @@ class MapleEngine:
     def encode_equation(self, expr: str, background: str | None = None) -> tuple[str, str]:
         import re
 
-        expr = expr.strip().rstrip(";:")
+        expr = expr.strip()
+        # A trailing ':' suppresses output when the block is executed (e.g.
+        # with(Units:-Simple): ). Remember it; re-append a ':' to the typeset at
+        # the end so the executable input keeps the suppression.
+        suppress_output = expr.endswith(':')
+        expr = expr.rstrip(";:")
 
         # Operation arrow: "expr => op" renders as  input ──op──▶ result , with the
         # result computed by the kernel (Maple context-panel style, e.g.
@@ -219,6 +224,8 @@ class MapleEngine:
                 self._last_encode_error = raw.strip()
                 return '', ''
             content_b64 = ''.join(raw.split())
+            if suppress_output and content_b64:
+                content_b64 = self._append_suppress_colon(content_b64)
             return content_b64, content_b64
 
         # Convert underscore subscripts to Maple bracket notation: c_p → c[p]
@@ -361,8 +368,33 @@ class MapleEngine:
             if bg_b64:
                 content_b64 = bg_b64
 
+        if suppress_output and content_b64:
+            content_b64 = self._append_suppress_colon(content_b64)
+
         display_b64 = content_b64
         return display_b64, content_b64
+
+    def _append_suppress_colon(self, content_b64: str) -> str:
+        """Append a trailing ':' (mo) to an encoded executable input so Maple
+        suppresses its output when the block is executed (e.g. with(...): )."""
+        import base64
+        decoded = base64.b64decode(content_b64).decode('latin-1')
+        tmp = os.path.join(os.environ.get("TEMP", "/tmp"), "maple_sup.m")
+        with open(tmp, 'wb') as f:
+            f.write(decoded.encode('latin-1'))
+        tmp_fwd = tmp.replace(chr(92), '/')
+        raw = self._execute_clean(
+            f'local ts:\n'
+            f'ts := op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m")):\n'
+            f'ts := Typesetting:-mrow(ts, Typesetting:-mo(":")):\n'
+            f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
+            f' style=TwoDimInput, executable=true)));\n'
+        )
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        return ''.join(raw.split()) or content_b64
 
     def _build_compound_unit_ts(self, unit_inner: str, display_map: dict) -> str:
         """Build Typesetting mfenced for compound unit like 'J'/('kg'*'degC')."""
