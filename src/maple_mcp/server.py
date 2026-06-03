@@ -148,8 +148,15 @@ def _save_and_edit(edit_fn) -> str:
     readback = edit_fn(str(path))
     reload_in_maple(str(path))
 
+    # Surface run_executable right when it's needed: executable blocks read back
+    # as {!...!} and are inserted UNRUN (run_executable itself may be a deferred
+    # tool the model hasn't loaded yet).
+    hint = ""
+    if readback and "{!" in readback:
+        hint = ("\n\nNote: executable block(s) were inserted UNRUN — call the "
+                "run_executable tool to compute them so their results appear.")
     if readback:
-        return f"Done, reads as:\n{readback}"
+        return f"Done, reads as:\n{readback}{hint}"
     return "Done."
 
 
