@@ -308,8 +308,16 @@ class MapleEngine:
             )
         else:
             raw = self._execute_clean(
-                f'local ts:\n'
-                f'ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false):\n'
+                f'local ts, pl, i:\n'
+                # A tuple/point "(a, b)" parses to an expression sequence; Typeset
+                # of a sequence keeps only the first element. Detect that and wrap
+                # each element in an mfenced (parens + comma) so (0, 2) survives.
+                f'pl := [InertForm:-Parse("{expr}")]:\n'
+                f'if nops(pl) > 1 then '
+                f'ts := Typesetting:-mfenced(seq(InertForm:-Typeset(pl[i], inert=false), '
+                f'i = 1 .. nops(pl))) '
+                f'else ts := InertForm:-Typeset(InertForm:-Parse("{expr}"), inert=false) '
+                f'end if:\n'
                 f'ts := subsindets(ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
                 f'ts := subsindets(ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
                 f'{self._notation_fixup("ts")}'
@@ -658,7 +666,7 @@ class MapleEngine:
         self._ensure_kernel()
         self.execute('''
 TS2Str := proc(e)
-    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop;
+    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop, isunit;
     if type(e, string) then
         if member(e, {"true","false","bold","italic","normal","none","bold-italic"}) then return "" end if;
         if e = "&infin;" then return "infinity" end if;
@@ -705,10 +713,19 @@ TS2Str := proc(e)
     elif type(e, specfunc(Typesetting:-msub)) then
         s := cat(procname(op(1,e)), "_", procname(op(2,e)))
     elif type(e, specfunc(Typesetting:-mfenced)) then
-        if has(e, "&lobrk;") then
-            s := cat("[[", procname(op(1,e)), "]]")
+        isunit := false;
+        for j from 1 to nops(e) do
+            if type(op(j,e), `=`) and rhs(op(j,e)) = "Unit" then isunit := true end if
+        end do;
+        ops := [];
+        for j from 1 to nops(e) do
+            if type(op(j,e), `=`) then next end if;
+            ops := [op(ops), procname(op(j,e))]
+        end do;
+        if isunit then
+            s := cat("[[", cat(op(ops)), "]]")
         else
-            s := cat("(", procname(op(1,e)), ")")
+            s := cat("(", StringTools:-Join(ops, ", "), ")")
         end if
     elif type(e, specfunc(Typesetting:-msqrt)) then
         s := cat("sqrt(", procname(op(1,e)), ")")

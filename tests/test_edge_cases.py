@@ -32,6 +32,18 @@ class TestTS2StrCoverage:
         assert "V" in decoded
         assert "water" in decoded
 
+    def test_tuple_keeps_both_elements(self, engine):
+        """Coordinate pairs must NOT collapse to the first element."""
+        _, b64 = engine.encode_equation("(0, 2)")
+        decoded = engine.decode_equation(b64)
+        assert "0" in decoded and "2" in decoded, f"tuple collapsed: {decoded}"
+
+    def test_paren_around_unit_not_nested_unit(self, engine):
+        """(25*[[m/s]])^2 must not re-serialize as a nested [[25*[[..]]]] block."""
+        _, b64 = engine.encode_equation("(25*Unit('m'/'s'))^2")
+        decoded = engine.decode_equation(b64)
+        assert "[[25" not in decoded, f"paren mis-read as unit block: {decoded}"
+
 
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):
