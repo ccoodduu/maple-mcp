@@ -9,7 +9,58 @@ from maple_mcp.maple_reload import reload_in_maple, save_in_maple, get_open_docu
 from maple_mcp.image_decode import decode_maple_image
 from maple_mcp import document
 
-mcp = FastMCP("maple-mcp")
+# Single source of truth for the Maple markup syntax + rules. Surfaced as the
+# server's instructions (loaded once for all tools) and via maple://help/markup.
+# Personal STYLE/workflow lives in the user's skill, not here; this is the API.
+MARKUP_GUIDE = """\
+Maple Document markup — how to write content for the Maple MCP edit tools
+(insert_after / insert_before / replace_block / append_content).
+
+Content is a list of item dicts:
+  {"type": "text",   "content": "Text with {{inline_math}} and **bold**"}
+  {"type": "code",   "content": "m = 1000*200/1000"}   executable 2D Math (a full calc)
+  {"type": "heading","content": "a)", "level": 2}        level 1 = section, 2 = subsection
+  {"type": "image",  "path": "C:/path/to/img.png"}
+  {"type": "empty"}                                      blank line
+
+INPUT vs DISPLAY — write ASCII Maple syntax; it RENDERS as pretty 2D math:
+  *->·   -–>−   :=->≔   x^2->x²   c[p]->c subscript p.  Never paste rendered glyphs back.
+
+Inline markup (MAPLE syntax, NOT LaTeX):
+  {{expr}}             non-executable 2D Math (display only)
+  {!expr!}             executable 2D Math, output on the line below
+  {=expr=}             executable 2D Math, output inline (same line)
+  {{expr => op}}       Maple operation: renders  expr --op--> result (Maple computes it).
+                       op = solve | factor | simplify | expand | evaluate (exact, ½)
+                            | approximate (decimal, 0.5) | value
+  {!var := expr:!}     define a function / store a value (the trailing : suppresses output)
+  **bold**  *italic*  __underline__
+  {color:R,G,B}text{/color}   highlight background, e.g. {color:255,255,0}svar{/color}
+  [[unit]]             unit inside math: [[kg]], [[(m)/(s^2)]], [[(J)/(kg*degC)]]
+  text [align:right]   right-align the block (also [align:center]) — a trailing tag
+
+Rules:
+  - ALL math goes in {{}} / {!!} / {=...=}; never write math as plain text.
+    Numbers with units: {{200*[[kg]]}} (renders 200 kg), never "200 kg".
+  - {{}} DISPLAYS; it does not run commands. To compute, use {{expr => op}} or the
+    `execute` tool then write the result. Do NOT put bare diff()/solve()/int()/eval()
+    in a plain {{}}. Integrals to compute: {{Int(f, x = a..b) => value}} (NOT int() in a
+    code block — it becomes an inert Int that computes nothing).
+  - Keep ONE = per {{}} with ⇕ between steps (always renders). A chain {{a = b = c}}
+    also encodes, but a Greek letter inside a chain may render as literal text.
+  - Fractions ALWAYS as (numerator)/(denominator). Greek by Maple name: Delta, rho,
+    Omega; combine with a variable via *: Delta*T renders ΔT. Subscripts: c[p] or c_p.
+    Derivatives as primes: f'(x), g''(x). Unknowns: {{V = ?}}, {{E[kin] = ?}}.
+  - Coordinates/points: write in prose ("punktet (2, 1)"), not {{(2,1)}}.
+  - Avoid Maple PROTECTED names as variables: I (imaginary unit), D, O, gamma, Pi,
+    Catalan. Use I[t], current, D[1], etc.
+
+Verify with screenshot_maple (renders the real document). Save context with
+screenshot_maple(match="Opgave 4") / pages="2" / crop_to_match=True. read_document may
+not fully decode operation arrows or some unit blocks — use a screenshot to confirm.
+"""
+
+mcp = FastMCP("maple-mcp", instructions=MARKUP_GUIDE)
 _document_path: Path | None = None
 
 
@@ -195,48 +246,14 @@ def insert_after(match: str, items: list[dict],
       - {"type": "image", "path": "C:/path/to/image.png"}
       - {"type": "empty"}  (blank line)
 
-    This is Maple Document mode — there are no code blocks.
-    Use type "code" for executable 2D Math equations.
-    Code must show a full calculation, NEVER bare numbers.
-
-    Markup syntax (MAPLE syntax, NOT LaTeX):
-      {{expr}}                      non-executable inline 2D Math
-      {!expr!}                      executable 2D Math, output below
-      {=expr=}                      executable 2D Math, inline output
-      **bold**  *italic*  __underline__
-      {color:R,G,B}text{/color}    highlight background
-      [[unit]]                      unit in equations: [[kg]], [[J/(kg*degC)]]
-      {{expr => op}}                Maple operation: renders  expr ──op──▶ result
-                                    op = solve, factor, simplify, expand, evaluate
-
-    ALL math must use {{}} — never write math as plain text.
-    ALL numbers with units must use {{200*[[kg]]}}, never "200 kg".
-    Equations are NOT evaluated — {{3*4}} displays 3·4, not 12.
-    Greek letters use Maple names: Delta, rho, Omega (not \\delta).
-    Subscripts use [...]: c[p], V[water] (not c_p, V_water).
-    Combine Greek+variable with *: Delta*T shows Δ·T (DeltaT shows literal text).
-    Derivatives display as primes: f'(x), g''(x).
-
-    A plain {{}} block DISPLAYS an expression; it does not run commands. To show
-    a Maple operation WITH its computed result (the nice ──op──▶ arrow), use
-    {{expr => op}}, e.g. {{x^2-4 => factor}}, {{1/3+1/6 => evaluate}},
-    {{20000*[[kg]]/(1260*[[kg/m^3]]) => evaluate}}. Maple computes the result.
-    Do NOT put bare diff()/solve()/int()/eval() inside a plain {{}} — they do not
-    typeset; use {{expr => op}} or compute with `execute` and write the result.
-    (Int(...) / Sum(...) with a CAPITAL letter are fine: inert display notation.)
-    Coordinates/points: write in text ("punktet (2, 1)"), not as {{(2,1)}}.
-
-    CRITICAL: Each {{}} must contain at most ONE = sign.
-    {{a = b = c}} WILL FAIL. Use: {{a = b}} ⇔ {{c = d}}
-
-    Maple syntax examples (DISPLAY, not commands):
-      {{f(x) = x^3 - 4*x + 1}}    function expression
-      {{f'(x) = 3*x^2 - 4}}        derivative result (computed via execute)
-      {{Int(x^2, x = 0..3)}}      definite integral (capital I = display only)
-      {{500*[[Omega]]}}           number with unit
-      {{4180*[[J/(kg*degC)]]}}    compound unit
-
-    Fractions: ALWAYS use (numerator)/(denominator) with parentheses.
+    "code" items are executable 2D Math (show a full calculation, never a bare
+    number). Markup essentials (MAPLE syntax, NOT LaTeX): {{expr}} display math,
+    {!expr!} executable (output below), {=expr=} executable (inline output),
+    {{expr => op}} operation arrow (op: solve/factor/simplify/expand/evaluate/
+    approximate), [[unit]] units, **bold**, {color:R,G,B}..{/color}, [align:right].
+    Each {{}} holds at most ONE = sign; fractions as (a)/(b); numbers+units as
+    {{200*[[kg]]}}. FULL markup syntax + pitfall rules are in this server's
+    instructions (and the maple://help/markup resource) — follow them.
 
     Args:
         match: Text substring to find the target block
@@ -438,7 +455,10 @@ def _window_grab_fallback(reason: str) -> list[TextContent | ImageContent] | str
 
 @mcp.resource("maple://help/{topic}")
 def maple_help(topic: str) -> str:
-    """Get Maple help for a topic."""
+    """Maple help. topic="markup" returns the full Maple Document markup guide
+    (syntax + pitfall rules); any other topic queries the Maple kernel's help."""
+    if topic.lower() in ("markup", "syntax", "formatting"):
+        return MARKUP_GUIDE
     return engine.get_help(topic)
 
 

@@ -1,104 +1,44 @@
 ---
 name: maple-formatting
 description: >
-  Formatting guide for inserting content into Maple .mw documents using the Maple MCP tools.
-  Use this skill whenever writing solutions, opgaver, or any content into a Maple worksheet —
-  whether the user asks you to solve a physics/math problem, write up a solution, insert into
-  a Maple document, or work with the Maple MCP tools (insert_after, set_document_path, etc.).
-  Also trigger when the user mentions "Maple", "afleveringer", "opgave", ".mw", or asks to
-  format a solution in their usual style. This skill defines the exact markup conventions,
-  document structure, and solution flow to use.
+  Personal STYLE guide for writing physics/math solutions into Maple .mw documents via the
+  Maple MCP. Use whenever solving an opgave/aflevering, writing a solution, or formatting
+  content in the user's usual style — or when the user mentions "Maple", "afleveringer",
+  "opgave", ".mw". The exact markup SYNTAX and pitfall rules live in the Maple MCP itself
+  (its tool instructions and the maple://help/markup resource); this skill defines the
+  document structure, solution flow, and physics/math conventions to apply on top of it.
 ---
 
-# Maple Document Formatting Skill
+# Maple Document Style Skill
 
-This skill defines how to structure and format content when inserting into Maple `.mw`
-worksheets via the Maple MCP tools. The style is based on a consistent pattern used across
-physics and mathematics assignments.
+This skill defines how to STRUCTURE and present a solution in the user's usual style. The
+exact markup syntax is owned by the MCP (see next section) — this is about the workflow.
 
-## INPUT vs DISPLAY — read this first
+## Syntax & gotchas — owned by the MCP (single source of truth)
 
-You always write markup in **ASCII Maple syntax**; Maple renders it as pretty 2D math.
-Never paste the rendered glyphs back as input.
+The exact markup syntax and pitfall rules live in the Maple MCP itself: its tool
+instructions, and the `maple://help/markup` resource. That is authoritative — follow it,
+and read `maple://help/markup` if unsure. The gotchas it covers (don't forget these):
 
-| Write (input) | Renders as |
-|---|---|
-| `*` | `·` (multiplication dot) |
-| `-` | `−` (minus) |
-| `:=` | `≔` (assignment) |
-| `x^2` | x² (superscript) |
-| `c[p]` or `c_p` | c with subscript p |
-| `Delta`, `rho`, `Omega` | Δ, ρ, Ω |
-| `f'(x)`, `g''(x)` | f′(x), g″(x) (primes) |
-
-So write `{{a = (1/2)*m*v^2}}`, NOT `{{a = ½·m·v²}}`. Write `{!f(x) := x^2:!}`, NOT `≔`.
-
-## Core Markup Reference
-
-| Syntax | Purpose | Example |
-|--------|---------|---------|
-| `{{expr}}` | Non-executable inline 2D Math (display only) | `{{v^2 - v[0]^2 = 2*a*(s - s[0])}}` |
-| `{!expr!}` | Executable 2D Math, **output on the line below** | `{!a = (0^2 - 8.33^2)/(2*6)!}` |
-| `{=expr=}` | Executable 2D Math, **output inline (same line)** | `{=r = sqrt(20.36^2 + 464.34)=}` |
-| `{{expr => op}}` | **Operation arrow**: `expr ──op──▶ result` (Maple computes the result) | `{{x^2 - 4 => factor}}` |
-| `**text**` | Bold | `**Info:**` |
-| `*text*` | Italic | `*x-værdien*` |
-| `__text__` | Underline | `__**bold underline**__` |
-| `[[unit]]` | Unit in equations | `[[m]]`, `[[(kg)/(m^3)]]`, `[[(m)/(s^2)]]` |
-| `{color:R,G,B}text{/color}` | Highlight background | `{color:255,255,0}answer{/color}` |
-| `[align:right]` | Right-align block | For final answers |
-| `⇕` | Equivalence arrow between steps (plain text line) | Between isolation steps |
-
-### Critical Rules
-- A plain `{{}}` block DISPLAYS an expression — it does NOT run commands. To show a
-  computation **with its result**, use `{{expr => op}}` (below) or compute with `execute`
-  and write the result. Do not put bare `diff()/solve()/int()/eval()` inside `{{}}`.
-- Keep ONE `=` per `{{}}` and put `⇕` between steps — this always renders
-  correctly. A chain `{{a = b = c}}` also encodes, but a Greek letter inside a
-  chain (e.g. `Delta*v = ...`) can render as literal text, so prefer the split.
-- Fractions ALWAYS use `(numerator)/(denominator)` with parentheses.
-- Greek letters use Maple names: `Delta`, `rho`, `Omega` (not `\delta`, not the glyph).
-- Subscripts: `v[0]`, `F[op]`, `c[p]` (or `v_0`, `c_p` — the underscore form is converted).
-- Combine a Greek letter with a variable using `*`: `Delta*T` renders as ΔT.
-- Units always inside `[[...]]`: `[[m]]`, `[[(J)/(kg*degC)]]`. Capital-I `Int(...)` and
-  `Sum(...)` are display notation and are fine inside `{{}}`.
-- Assignment input is `:=` (renders as ≔). The glyph `≔` does NOT parse as input.
-- Avoid Maple's PROTECTED names as variables: `I` (imaginary unit ⅈ), `D`
-  (derivative operator), `O`, `gamma`, `Pi`, `Catalan`. Assigning to them errors
-  or changes meaning. Use `I[t]`, `current`, `D[1]`, etc. instead.
-- Unknowns: mark with `?`, e.g. `{{E[kin] = ?}}` or `{{V = ?}}` (works with
-  subscripts too).
-
-## Operation Arrows — `{{expr => op}}`  (preferred for "compute and show")
-
-This renders exactly like Maple's left-hand **context-panel** operations: the input, a
-labelled right-arrow, and the **result computed by Maple**:
-
-```
-{{x^2 - 5*x + 6 => factor}}      →  x²−5·x+6 ──factor──▶ (x−2)·(x−3)
-{{x^2 - 4 = 0 => solve}}         →  x²−4=0 ──solve──▶ ...
-{{(x^2 - 9)/(x - 3) => simplify}}→  ... ──simplify──▶ x+3
-{{1/3 + 1/6 => evaluate}}        →  ⅓+⅙ ──evaluate──▶ ½       (exact)
-{{1/3 + 1/6 => approximate}}     →  ⅓+⅙ ──approximate──▶ 0.5  (decimal)
-{{Int(4 - x^2, x = 0..2) => value}}  →  ∫₀²(4−x²)dx ──value──▶ 16/3
-{{20000*[[kg]]/(1260*[[kg/m^3]]) => approximate}}  →  ... ──approximate──▶ 15.87 m³
-```
-
-- Operations: `solve`, `factor`, `simplify`, `expand`, `evaluate` (EXACT, e.g. ½),
-  `approximate` (DECIMAL, e.g. 0.5), `value`. Unknown ops fail loudly.
-- For a numeric physics answer with units, use `approximate`. For an exact fraction, use
-  `evaluate`. Results keep units. The result is **baked in** at write time (a static
-  display); for a block that re-runs live in Maple, use `{=expr=}`.
-- INTEGRALS: write `{{Int(f, x = a..b) => value}}` (capital `Int`) — this renders the
-  integral and computes the result. Do NOT put `int(...)` in an executable code block: it
-  becomes an inert `Int` that computes nothing on Enter.
-- This is the cleanest way to present a worked step that needs a computed answer, and it
-  matches the hand-authored context-panel style.
+- Write **ASCII input**; it renders as 2D math. Use `:=` (not the glyph `≔`), `*` (not `·`),
+  `-` (not `−`), `x^2`, `c[p]`. Never paste rendered glyphs back as input.
+- **One `=` per `{{}}`**; put `⇕` between isolation steps.
+- `{{}}` only **DISPLAYS**. To COMPUTE, use `{{expr => op}}` (op = solve / factor / simplify /
+  expand / evaluate=exact / approximate=decimal / value) or the `execute` tool, then write
+  the result. Never put bare `diff()/solve()/int()/eval()` inside a `{{}}`.
+- Integrals you want computed: `{{Int(f, x = a..b) => value}}` — NOT `int()` in a code
+  block (it becomes an inert `Int` that computes nothing).
+- Fractions as `(a)/(b)`; Greek by name (`Delta`, `rho`); `Delta*T` → ΔT; primes `f'(x)`,
+  `g''(x)`; numbers+units `{{200*[[kg]]}}`.
+- Avoid Maple **protected names** as variables: `I`, `D`, `O`, `gamma`, `Pi`, `Catalan`.
+- Mark **unknowns** with `?`: `{{V = ?}}`, `{{E[kin] = ?}}`.
+- **Verify** with `screenshot_maple` (whole doc, or `match="Opgave 4"` / `pages="2"` /
+  `crop_to_match=True` to save context). read_document may not fully decode arrows/unit
+  blocks — confirm with a screenshot.
 
 ## Document Structure
 
 ### Heading Hierarchy
-
 ```
 # Opgave 1                    ← Main task/section (level 1)
   ## a)                        ← Subtask (level 2)
@@ -106,7 +46,6 @@ labelled right-arrow, and the **result computed by Maple**:
   ## b)
     ...
 ```
-
 - Use `#` for main opgave headings: `# Opgave 1`, or descriptive names like `# Bremselængde`.
 - Use `##` for subtasks: `## a)`, `## b)`, etc.
 - Use `{"type": "empty"}` items for vertical spacing where you want it.
@@ -138,24 +77,13 @@ Show algebraic manipulation with `⇕` between each step:
 Each line has exactly one equation in `{{}}`. Show every meaningful step.
 
 ### 3. Substitute and Compute
-Insert the known values and compute. Use `{=...=}` for an inline result, or `{{... => evaluate}}`
-for the context-panel arrow:
+Insert the known values and compute. Use `{=...=}` for an inline result, or
+`{{... => approximate}}` for the context-panel arrow:
 ```
 De kendte værdier indsættes:
 {=V = (0.005892*[[N]])/(1000*[[(kg)/(m^3)]]*9.82*[[(N)/(kg)]])=}
 ```
 Introduce substitution with "De kendte værdier indsættes:", "Værdierne indsættes:", "Nu udregnes…".
-
-## Verify the rendering — `screenshot_maple`
-
-After writing (or while working), call `screenshot_maple` to SEE how the document renders
-in Maple, and fix anything that looks wrong (units, fractions, Greek, primes, arrows).
-- Whole document: `screenshot_maple()`
-- Just the part you changed (saves context): `screenshot_maple(match="Opgave 4")`, or
-  `screenshot_maple(pages="2")`, or `screenshot_maple(match="Beregning:", crop_to_match=True)`.
-- `match` searches the document TEXT (headings, labels, prose) — not the typeset math —
-  so match on a heading or label near the part you want.
-Treat a screenshot as a real check: read it, confirm the math looks right, then continue.
 
 ---
 
@@ -219,8 +147,8 @@ Mathematics solutions do NOT start with a `**Info:**` block. State the given inf
 naturally in prose, or re-state the problem directly before solving.
 
 ### Derivatives
-Write derivatives with primes — they render correctly: `f'(x)`, `g''(x)`, `h'''(x)`.
-Compute them with `execute` or show the operation arrow, then state the result:
+Write derivatives with primes: `f'(x)`, `g''(x)`, `h'''(x)`. Compute with `execute` or an
+operation arrow, then state the result:
 ```
 {{g'(x) = 3*x^2 - 6*x}}
 {{g''(x) = 6*x - 6}}
@@ -253,7 +181,6 @@ visually verified.
   {{x^2 + (y - b)^2 = r^2}}
 
   Vi kender 2 punkter på cirklen — punktet (21.5485, 0) og punktet (0, 50).
-  (Skriv koordinater i teksten, ikke som {{(2,1)}}.)
 
   Ud fra det opstilles 2 ligninger:
   {{21.5485^2 + (0 - b)^2 = r^2}}
@@ -274,21 +201,6 @@ visually verified.
   {!plot((x^2 + (y-20.36)^2 = 29.64^2), x = -40..40, y = -20..60)!}
 ```
 
-## Variable Assignment vs. Computation
-
-- `{!var := expr:!}` — define a function / store a value for later use (colon suppresses output).
-- `{=expr=}` — compute a result and show it inline.
-- `{!expr!}` — compute and show the result on the line below (e.g. a plot or a command).
-- `{{expr => op}}` — show a context-panel operation with its computed result (static).
-
-Examples:
-```
-{!f(x) := 3*x^2 - 2*x + 1:!}      ← Define function (no output)
-{=f(2)=}                           ← Compute and show inline
-{!plot(f(x), x = 0..5)!}          ← Plot (output is a graph)
-{{f(x) = 0 => solve}}              ← Operation arrow with the roots
-```
-
 ## Narrative Language
 
 Write explanatory text in Danish. Keep it concise but clear:
@@ -299,16 +211,7 @@ Write explanatory text in Danish. Keep it concise but clear:
 - "Da [reason], så…" — justifying a step
 - "For at finde X skal…" — stating the goal
 
-## Units Formatting
-
-- Simple: `[[m]]`, `[[kg]]`, `[[N]]`, `[[V]]`, `[[A]]`, `[[Omega]]`
-- Compound: `[[(m)/(s)]]`, `[[(kg)/(m^3)]]`, `[[(N)/(kg)]]`, `[[(J)/(kg*degC)]]`
-- Squared/cubed: `[[m^2]]`, `[[m^3]]`, `[[cm^3]]`
-- Per unit: `[[(m)/(s^2)]]`, `[[(km)/(h)]]`
-- Numbers with units use `*`: `{{200*[[kg]]}}` (renders as 200 kg).
-
 ## Regression and Data Analysis
-
 ```
 {!X := (2005, 2006, 2007):!}
 {!Y := (7540, 8055, 8638):!}
@@ -316,15 +219,3 @@ Write explanatory text in Danish. Keep it concise but clear:
 {!LinReg(X, Y)!}
 ```
 Follow regression with interpretation of the R² value and model validity.
-
-## Solve Patterns
-
-Preferred (context-panel arrow, shows the result):
-```
-{{equation => solve}}
-```
-For a live executable solve, or numerical solutions:
-```
-{=solve(equation, variable)=}
-{=fsolve(equation, variable)=}
-```
