@@ -29,6 +29,9 @@ DecodeImage.java
 TestDecode.java
 cfr.jar
 
+# Live-test scratch (throwaway .mw / .bak / probe scripts)
+_agenttest/
+
 # Bridge state
 .bridge/
 
