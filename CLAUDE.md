@@ -15,6 +15,7 @@ Claude Desktop ←→ MCP Server (Python) ←→ Maple .mw file (XML)
 - **Python MCP server** (`src/maple_mcp/server.py`) - 10 tools via FastMCP
 - **Maple kernel** (`maple_engine.py`) - ctypes to maplec.dll for computation + equation encoding
 - **Document module** (`document.py`) - reads/writes .mw XML with raw string insertion (NEVER ET.write)
+- **Backup store** (`backup.py`) - out-of-tree rotating backup ring under `%LOCALAPPDATA%/maple-mcp/backups/<doc-id>/`; powers multi-level `undo` without cluttering the work dir
 - **Image codec** (`image_decode.py`) - Wheeler compression + custom Base64 (reverse-engineered from Maple's Java)
 - **Render module** (`maple_render.py`) - renders the saved .mw to images for `screenshot_maple` (see below)
 - **Java Agent** (`reload-agent.jar`) - injected into Maple's JVM via `-javaagent` in `launch.ini`, provides TCP server on port 19876 for save/reload/getpath without focus stealing
@@ -27,6 +28,9 @@ Claude Desktop ←→ MCP Server (Python) ←→ Maple .mw file (XML)
 
 ### NEVER use ET.write or ET.indent on .mw files
 ElementTree re-serializes XML and corrupts base64 data (images, equations, Drawing-Root). Always use raw string insertion: find position in file text, splice in new XML, write back.
+
+### Validate the whole document before every write
+Raw-splice edits are fast but a mis-computed offset or unescaped char would silently corrupt the .mw. `document._commit()` runs `ET.fromstring(content.encode())` on the *entire* spliced document before `write_text`; on a parse error it discards the just-made backup and raises, leaving the file untouched. The backup is pushed (via `backup.push`) only AFTER all read-only match resolution succeeds, so a no-match never leaves a phantom undo step.
 
 ### Content matching, not position-based
 All edit operations use content matching (like Edit tool's old_string). Match text corresponds exactly to what read_document outputs. For sections, include `#` prefix (e.g. `"## b)"`).
@@ -71,7 +75,7 @@ Equations use MAPLE syntax, not LaTeX. Auto-conversion from LaTeX is attempted b
 | `replace_block` | Replace matched block (refuses sections with children) |
 | `delete_block` | Delete matched block (refuses section headings unless confirmed) |
 | `append_content` | Append at document end with nested section support |
-| `undo` | Restore from .mw.bak backup |
+| `undo` | Restore prior version from the out-of-tree backup ring (multi-level) |
 | `screenshot_maple` | Render document to page images (Maple PDF export) to verify rendering |
 
 ## Key Files
@@ -113,7 +117,6 @@ jar cfe maple-export.jar MapleExport -C _b MapleExport.class
 - Equation round-trip is lossy: decoded equations (e.g. `∫x²dx`) don't always re-encode to identical XML
 - `_count_section_depth` scans XML linearly - could be slow on very large documents
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax
-- Multi-level undo not supported (single .mw.bak backup)
 - `screenshot_maple` hangs (then times out → window-grab fallback) on documents with live embedded components (`EC-RTableBrowser` etc.): `WmiECRTableBrowserView.layoutView` sleeps waiting for the interactive component during off-window layout. Rare (~1/75 real assignments); such widget-heavy docs can't be rendered statically anyway.
 - `screenshot_maple` needs an ACTIVE, UNLOCKED desktop session: Maple's PDF formatter builds a Swing dialog (`WmiSectionOptionsDialog`) that requires a screen device, so export throws `HeadlessException`/"no screen devices" when the screen is locked or the process has no display. Works in normal interactive use (user at the machine); fails when the session is locked or run unattended. `export_pdf` detects this and returns an actionable message.
 - PDF export spawns a fresh Maple JVM (~5s cold start per call)

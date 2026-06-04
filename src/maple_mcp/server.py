@@ -362,7 +362,8 @@ def replace_block(match: str, items: list[dict],
 
     SAFETY: Refuses to replace a section that has children.
     Match a specific block inside the section instead.
-    A .mw.bak backup is created before every edit.
+    Every edit is validated as well-formed XML before saving and the prior
+    version is pushed onto the undo ring (undo is multi-level).
 
     Args:
         match: Text substring to find the block to replace
@@ -450,21 +451,21 @@ def run_executable() -> str:
 def undo() -> str:
     """Undo the last edit (any insert, replace, or delete operation).
 
-    Restores the document from the .mw.bak backup file.
-    A backup is created before every edit operation.
+    Multi-level: every edit pushed the prior version onto a rotating backup ring
+    kept OUTSIDE the document folder (so your assignment directory stays clean),
+    so repeated undo walks back through the edit history.
     """
     path = _get_path()
     if isinstance(path, str):
         return path
 
-    backup = path.with_suffix(".mw.bak")
-    if not backup.exists():
+    from maple_mcp import backup as _bk
+    restored = _bk.pop(str(path))
+    if not restored:
         return "No backup found. Nothing to undo."
 
-    import shutil
-    shutil.copy2(backup, path)
     reload_in_maple(str(path))
-    return f"Restored from backup. Document reloaded."
+    return "Undid the last edit (restored the prior version). Document reloaded."
 
 
 @mcp.tool()

@@ -15,6 +15,14 @@ def engine():
     return eng
 
 
+@pytest.fixture(autouse=True)
+def _isolate_backups(tmp_path_factory, monkeypatch):
+    """Redirect the out-of-tree backup ring to a temp dir so the test suite never
+    writes into the real %LOCALAPPDATA%/maple-mcp/backups."""
+    root = tmp_path_factory.mktemp("mw-backups")
+    monkeypatch.setenv("MAPLE_MCP_BACKUP_ROOT", str(root))
+
+
 @pytest.fixture
 def tmp_mw(tmp_path):
     """Create a minimal .mw file for testing."""

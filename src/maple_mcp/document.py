@@ -392,15 +392,39 @@ def _block_to_xml(block) -> str:
     return ET.tostring(block, encoding="unicode")
 
 
-def _backup(file_path: str):
-    """Create a backup before destructive operations."""
-    path = Path(file_path)
-    backup = path.with_suffix(".mw.bak")
-    import shutil
-    shutil.copy2(path, backup)
+def _backup(file_path: str) -> str | None:
+    """Push the current file onto the out-of-tree rotating backup ring and return
+    the new backup path. Backups live OUTSIDE the document folder (see backup.py)
+    so the user's assignment directory stays clean — no .bak clutter."""
+    from maple_mcp import backup as _bk
+    return _bk.push(file_path)
 
 
-def _append_blocks(file_path: str, blocks) -> str:
+def _commit(file_path: str, content: str, backup_path: str | None = None) -> None:
+    """Write `content` ONLY if the whole document is still well-formed XML.
+
+    Every edit splices a raw string; a mis-computed offset or an unescaped char
+    would otherwise silently corrupt the .mw — the tool would report success and
+    Maple would later refuse to open the file. We validate the entire spliced
+    document first (read_document already ET-parses the file, so this is a fair,
+    cheap invariant). On failure the file is left untouched and the just-made
+    backup is discarded, so no phantom undo step is left behind.
+    """
+    try:
+        # Encode to bytes: the .mw carries an XML encoding declaration, which
+        # ET.fromstring rejects on a str ("encoding declaration not supported").
+        ET.fromstring(content.encode("utf-8"))
+    except ET.ParseError as e:
+        from maple_mcp import backup as _bk
+        _bk.discard(backup_path)
+        raise ValueError(
+            f"Edit aborted — the result would not be a well-formed Maple document "
+            f"(XML error: {e}). The file was left unchanged."
+        ) from e
+    Path(file_path).write_text(content, encoding="utf-8")
+
+
+def _append_blocks(file_path: str, blocks, backup_path: str | None = None) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
 
@@ -412,7 +436,7 @@ def _append_blocks(file_path: str, blocks) -> str:
     new_xml = "\n".join(_block_to_xml(b) for b in blocks)
     content = content[:idx] + new_xml + "\n" + content[idx:]
 
-    path.write_text(content, encoding="utf-8")
+    _commit(file_path, content, backup_path)
     return str(path)
 
 
@@ -916,7 +940,6 @@ def _readback(new_xml: str) -> str:
 
 def insert_after(file_path: str, match: str, items: list[dict],
                  section: str | None = None, occurrence: int | None = None) -> str:
-    _backup(file_path)
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
     blocks = _find_block_positions(content)
@@ -929,14 +952,14 @@ def insert_after(file_path: str, match: str, items: list[dict],
     new_blocks, _, _ = _build_nested(items, 0, label)
     new_xml = "\n".join(_block_to_xml(b) for b in new_blocks)
 
-    content = content[:block["end"]] + "\n" + new_xml + content[block["end"]:]
-    path.write_text(content, encoding="utf-8")
+    new_content = content[:block["end"]] + "\n" + new_xml + content[block["end"]:]
+    bkp = _backup(file_path)
+    _commit(file_path, new_content, bkp)
     return _readback(new_xml)
 
 
 def insert_before(file_path: str, match: str, items: list[dict],
                   section: str | None = None, occurrence: int | None = None) -> str:
-    _backup(file_path)
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
     blocks = _find_block_positions(content)
@@ -949,8 +972,9 @@ def insert_before(file_path: str, match: str, items: list[dict],
     new_blocks, _, _ = _build_nested(items, 0, label)
     new_xml = "\n".join(_block_to_xml(b) for b in new_blocks)
 
-    content = content[:block["start"]] + new_xml + "\n" + content[block["start"]:]
-    path.write_text(content, encoding="utf-8")
+    new_content = content[:block["start"]] + new_xml + "\n" + content[block["start"]:]
+    bkp = _backup(file_path)
+    _commit(file_path, new_content, bkp)
     return _readback(new_xml)
 
 
@@ -972,14 +996,14 @@ def replace_block(file_path: str, match: str, items: list[dict],
                 f"Replacing would destroy all content. Match a specific block inside instead."
             )
 
-    _backup(file_path)
     root = ET.parse(file_path).getroot()
     label = _next_label_num(root)
     new_blocks, _, _ = _build_nested(items, 0, label)
     new_xml = "\n".join(_block_to_xml(b) for b in new_blocks)
 
-    content = content[:block["start"]] + new_xml + content[block["end"]:]
-    path.write_text(content, encoding="utf-8")
+    new_content = content[:block["start"]] + new_xml + content[block["end"]:]
+    bkp = _backup(file_path)
+    _commit(file_path, new_content, bkp)
     return _readback(new_xml)
 
 
@@ -1003,9 +1027,9 @@ def delete_block(file_path: str, match: str,
             f"Set delete_section=True if this is intended, or use a more specific match."
         )
 
-    _backup(file_path)
-    content = content[:block["start"]] + content[block["end"]:]
-    path.write_text(content, encoding="utf-8")
+    new_content = content[:block["start"]] + content[block["end"]:]
+    bkp = _backup(file_path)
+    _commit(file_path, new_content, bkp)
 
 
 def _extract_align(text: str) -> tuple[str, str | None]:
@@ -1098,10 +1122,10 @@ def _build_nested(items: list[dict], start: int, label_start: int,
 
 
 def insert_content(file_path: str, items: list[dict]) -> str:
-    _backup(file_path)
     root = ET.parse(file_path).getroot()
     label = _next_label_num(root)
-    blocks, _, _ = _build_nested(items, 0, label)
-    _append_blocks(file_path, blocks)
+    blocks, _, _ = _build_nested(items, 0, label)   # may raise before any backup
+    bkp = _backup(file_path)
+    _append_blocks(file_path, blocks, bkp)
     new_xml = "\n".join(_block_to_xml(b) for b in blocks)
     return _readback(new_xml)

@@ -156,28 +156,26 @@ class TestEdgeCases:
         assert "\u00e6ndringen" in contents or "ndringen" in contents
 
     def test_backup_created(self, tmp_mw):
-        """Edit operations should create .mw.bak backup."""
+        """Edit operations push a backup onto the out-of-tree ring, NOT a .mw.bak."""
         from maple_mcp.document import insert_after
+        from maple_mcp import backup
         from pathlib import Path
         insert_after(tmp_mw, "First block", [
             {"type": "text", "content": "trigger backup"},
         ])
-        backup = Path(tmp_mw).with_suffix(".mw.bak")
-        assert backup.exists()
+        assert backup._ring(tmp_mw), "edit should create a backup in the ring"
+        assert not Path(tmp_mw).with_suffix(".mw.bak").exists()
 
     def test_undo_restores(self, tmp_mw):
-        """After edit, .mw.bak should contain the original."""
+        """After an edit, popping the backup ring restores the original."""
         from maple_mcp.document import insert_after, read_document
-        from pathlib import Path
-        import shutil
+        from maple_mcp import backup
 
         original = read_document(tmp_mw)
         insert_after(tmp_mw, "First block", [
             {"type": "text", "content": "New content."},
         ])
-        # Restore from backup
-        backup = Path(tmp_mw).with_suffix(".mw.bak")
-        shutil.copy2(backup, tmp_mw)
+        assert backup.pop(tmp_mw), "ring should hold the prior version"
         restored = read_document(tmp_mw)
 
         original_text = " ".join(e.get("content", "") for e in original)
