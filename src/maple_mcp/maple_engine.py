@@ -713,7 +713,7 @@ class MapleEngine:
         self._ensure_kernel()
         self.execute('''
 TS2Str := proc(e)
-    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop, isunit, mu, bnd, body, fname, opn;
+    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop, isunit, mu, bnd, body, fname, opn, apos;
     if type(e, string) then
         if member(e, {"true","false","bold","italic","normal","none","bold-italic"}) then return "" end if;
         if e = "&infin;" then return "infinity" end if;
@@ -793,6 +793,26 @@ TS2Str := proc(e)
             body := cat(body, procname(op(j,e)))
         end do;
         s := cat("diff(", body, ", ", var, ")")
+    elif type(e, specfunc(Typesetting:-mrow)) and has(e, "&rarr;") then
+        # Operation arrow: mrow(input, mover(&rarr;, mtext(op)), result) -> "input => op".
+        # Drop the baked result; the encoder recomputes it on re-encode, so the
+        # canonical '=>' form round-trips. Comes AFTER the limit branch so a limit's
+        # &rarr; bound (an mo, not a child mover) is not mistaken for an arrow.
+        apos := 0;
+        for j from 1 to nops(e) do
+            if type(op(j,e), specfunc(Typesetting:-mover)) and has(op(j,e), "&rarr;") then apos := j; break end if
+        end do;
+        if apos > 0 then
+            body := "";
+            for j from 1 to apos-1 do body := cat(body, procname(op(j,e))) end do;
+            s := cat(body, " => ", procname(op(2, op(apos, e))))
+        else
+            for i from 1 to nops(e) do
+                o := op(i, e);
+                if type(o, equation) then next end if;
+                s := cat(s, procname(o))
+            end do
+        end if
     elif type(e, specfunc(Typesetting:-mfrac)) then
         s := cat("(", procname(op(1,e)), ")/(", procname(op(2,e)), ")")
     elif type(e, specfunc(Typesetting:-msup)) then

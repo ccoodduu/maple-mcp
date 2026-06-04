@@ -67,7 +67,7 @@ Rules:
 
 Verify with screenshot_maple (renders the real document). Save context with
 screenshot_maple(match="Opgave 4") / pages="2" / crop_to_match=True. read_document may
-not fully decode operation arrows or some unit blocks — use a screenshot to confirm.
+not fully decode some unit blocks — use a screenshot to confirm.
 """
 
 mcp = FastMCP("maple-mcp", instructions=MARKUP_GUIDE)

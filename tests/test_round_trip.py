@@ -133,6 +133,22 @@ class TestOperationArrow:
         _, b64 = engine.encode_equation(expr)
         assert b64, f"operation failed to encode: {expr}"
 
+    @pytest.mark.parametrize("expr", [
+        "x^2-5*x+6 => factor",
+        "1/3+1/6 => evaluate",
+        "x^2-4 => solve",
+    ])
+    def test_operation_arrow_roundtrips(self, engine, expr):
+        """Decoded arrows must use the canonical '=> op' form (not ' --op--> ')
+        and re-encode, so reading then rewriting a block preserves the arrow."""
+        _, b64 = engine.encode_equation(expr)
+        decoded = engine.decode_equation(b64)
+        assert "=>" in decoded and "--" not in decoded, \
+            f"arrow not round-trippable: {decoded!r}"
+        engine._last_encode_error = None
+        _, b64b = engine.encode_equation(decoded)
+        assert b64b, f"decoded {decoded!r} did not re-encode: {engine._last_encode_error}"
+
     def test_bad_operation_fails_loudly(self, engine):
         """An unknown operation must fail (empty b64), not emit garbage."""
         engine._last_encode_error = None
