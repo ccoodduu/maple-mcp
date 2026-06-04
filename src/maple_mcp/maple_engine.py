@@ -952,10 +952,13 @@ end proc:
         result = self.execute(
             f'printf("%s", TS2Str(op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m"))))'
         )
-        if "Error" in result or "Typesetting" in result:
-            # TS2Str could not fully decode this structure. The raw %a dump is
-            # unreadable (a giant Typesetting:-mrow(...) serialization), so return
-            # a clean marker instead — the rendering is fine, verify via screenshot.
+        import re as _re_fail
+        if "Error" in result or _re_fail.search(r'Typesetting:-\w+\(', result):
+            # TS2Str could not fully decode this structure (a partial node leaked,
+            # serializing as Typesetting:-mrow(...)). The raw %a dump is unreadable,
+            # so return a clean marker — the rendering is fine, verify via screenshot.
+            # Structural check (Typesetting:-NAME() ), not a bare "Typesetting"
+            # substring, so legitimate text mentioning Typesetting isn't clobbered.
             result = "[equation — verify with screenshot_maple]"
 
         try:

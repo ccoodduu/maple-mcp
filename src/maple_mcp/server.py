@@ -182,6 +182,20 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
             result.append(TextContent(type="text", text="\n".join(text_lines)))
             text_lines.clear()
 
+    # Pre-decode images and apply ONE combined budget across them (a read can be
+    # image-heavy; base64 inflates ~1.33x toward the ~1MB MCP result cap — the same
+    # protection screenshot_maple already has). png_iter yields one item per image
+    # entry (None if decode failed); budgeted yields one ImageContent per good image.
+    pngs = []
+    for e in entries:
+        if e.get("type") == "image" and e.get("encoded"):
+            try:
+                pngs.append(decode_maple_image(e["encoded"]))
+            except Exception:
+                pngs.append(None)
+    budgeted = iter(_images_under_budget([p for p in pngs if p], total_budget=600_000))
+    png_iter = iter(pngs)
+
     for entry in entries:
         t = entry.get("type")
         depth = entry.get("depth", 0)
@@ -191,11 +205,10 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
 
         if t == "image" and entry.get("encoded"):
             _flush_text()
-            try:
-                png_data = decode_maple_image(entry["encoded"])
-                result.append(_png_to_image_content(png_data))
-            except Exception:
+            if next(png_iter, None) is None:
                 text_lines.append(f"{tag}{indent}[IMAGE: decode failed]")
+            else:
+                result.append(next(budgeted))
         elif t == "section":
             level = entry.get("level", 1)
             section_indent = "  " * (level - 1)

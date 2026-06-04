@@ -671,10 +671,20 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
 
     _walk(root)
 
-    # Strip trailing corrupt equation blocks
-    while entries and entries[-1].get("content") == "[CORRUPT EQUATION]":
-        entries.pop()
-    # Strip trailing empty blocks
+    # Surface (don't silently drop) blocks whose equation failed to decode: a
+    # dropped block makes the user risk editing/deleting the wrong neighbour. Relabel
+    # to a clearer, still-targetable marker; the block keeps its [N] index in read.
+    def _relabel(c):
+        if isinstance(c, list):
+            return [x.replace("[CORRUPT EQUATION]", "[unreadable equation]")
+                    if isinstance(x, str) else x for x in c]
+        if isinstance(c, str):
+            return c.replace("[CORRUPT EQUATION]", "[unreadable equation]")
+        return c
+    for e in entries:
+        if "content" in e:
+            e["content"] = _relabel(e["content"])
+    # Strip trailing empty blocks (genuinely blank lines)
     while entries and entries[-1].get("type") == "empty":
         entries.pop()
 
