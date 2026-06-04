@@ -273,6 +273,22 @@ class TestChangeDetectionAndPlot:
         entries = read_document(str(mw))
         assert any(e.get("type") == "plot" for e in entries), entries
 
+    def test_plot_command_reads_as_rendered_not_unrun(self, tmp_path):
+        """A plot(...) command with a rendered <Plot> output should read as having
+        output (a graph), NOT as an unrun block — structure matches real Maple .mw."""
+        from maple_mcp.document import read_document
+        mw = tmp_path / "p.mw"
+        mw.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?><Worksheet>'
+            '<Presentation-Block><Group view="presentation">'
+            '<Input><Text-field style="Maple Input">plot(x^2)</Text-field></Input>'
+            '<Output><Text-field style="Maple Plot" layout="Maple Plot">'
+            '<Plot height="200" width="300" type="two-dimensional">QUJD</Plot>'
+            '</Text-field></Output>'
+            '</Group></Presentation-Block></Worksheet>', encoding="utf-8")
+        code = [e for e in read_document(str(mw)) if e.get("type") == "code"]
+        assert code and any("PLOT" in str(o) for o in (code[0].get("output") or []))
+
 
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):

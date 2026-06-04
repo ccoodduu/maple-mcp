@@ -62,6 +62,9 @@ Rules:
     Omega; combine with a variable via *: Delta*T renders ΔT. Subscripts: c[p] or c_p.
     Derivatives as primes: f'(x), g''(x). Unknowns: {{V = ?}}, {{E[kin] = ?}}.
   - Coordinates/points: write in prose ("punktet (2, 1)"), not {{(2,1)}}.
+  - Plots: write an executable plot command, e.g. {!plot(f(x), x = a .. b)!} or
+    {!pointplot(X, Y)!}, then call run_executable — Maple renders the graph (you
+    can't author plot data directly). read_document shows it as "[PLOT: graph]".
   - Avoid Maple PROTECTED names as variables: I (imaginary unit), D, O, gamma, Pi,
     Catalan. Use I[t], current, D[1], etc.
 

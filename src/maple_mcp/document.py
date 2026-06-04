@@ -639,6 +639,10 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
         # Surface a placeholder so it's seen and targetable. (Maple stores plots
         # under elements whose tag ends in "Plot", e.g. Plot / Plot-Window.)
         has_plot = any(el.tag.startswith("Plot") for el in group.iter())
+        # A plot is the rendered OUTPUT of a plot(...) command. Surface it as the
+        # block's output so the command doesn't read as "[NOT RUN]" and the LLM
+        # knows a graph exists (and won't delete the block as empty).
+        plot_note = ["[PLOT: graph — view with screenshot_maple]"] if has_plot else []
 
         if images:
             for img in images:
@@ -649,7 +653,8 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                     "encoded": img.get("encoded", ""),
                 })
         if inputs:
-            entries.append({"type": "code", "content": inputs, "output": outputs})
+            entries.append({"type": "code", "content": inputs,
+                            "output": outputs or plot_note})
         elif texts:
             if group_style == "title":
                 entries.append({"type": "title", "content": " ".join(texts)})
@@ -661,8 +666,8 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                 })
             else:
                 entry = {"type": "text", "content": " ".join(texts)}
-                if outputs:
-                    entry["output"] = outputs
+                if outputs or plot_note:
+                    entry["output"] = outputs or plot_note
                 if group_align:
                     entry["align"] = group_align
                 entries.append(entry)
