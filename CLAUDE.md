@@ -105,11 +105,20 @@ jar cfe maple-export.jar MapleExport -C _b MapleExport.class
 ```
 (use Maple's bundled JDK at `<MAPLE>/jre/bin` — it matches Maple's Java 21 runtime).
 
+Rebuilding `reload-agent.jar` (after editing `java/ReloadAgent.java`) requires a
+manifest with `Premain-Class`/`Agent-Class`/`Can-Redefine-Classes`, and **Maple must
+be CLOSED** — a running Maple JVM locks the jar (build to a `.staged.jar` and swap it
+in after closing if needed). Compile against `<MAPLE>/java/worksheet.jar` with Maple's
+bundled JDK.
+
 ## Setup
 
+Prefer `install.ps1` — it computes the project dir and writes the correct `-javaagent`
+line. Manual steps (replace `<PROJECT_DIR>` with this repo's path):
+
 1. Maple 2025 installed at `C:\Program Files\Maple 2025`
-2. `launch.ini`: add `java_args=-javaagent:C:/Users/willi/mcp-servers/maple-mcp/reload-agent.jar`
-3. AHK v2 at `C:\Users\willi\AppData\Local\Programs\AutoHotkey\v2\AutoHotkey64.exe`
+2. `launch.ini`: add `java_args=-javaagent:<PROJECT_DIR>/reload-agent.jar`
+3. AHK v2 at `<LOCALAPPDATA>\Programs\AutoHotkey\v2\AutoHotkey64.exe`
 4. User runs Maple inside AHK wrapper (`maple-windows.ahk`) - Maple's SunAwtFrame is child of AutoHotkeyGUI
 
 ## Known Issues / Future Work

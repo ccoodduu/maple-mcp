@@ -2,7 +2,7 @@
 
 MCP server that lets Claude read, write, and edit **Maple 2025 Document mode** (.mw) assignments — with proper 2D Math, units, sections, formatting, and images.
 
-![Maple MCP Demo](https://img.shields.io/badge/Maple-2025-green) ![Tests](https://img.shields.io/badge/tests-84%20passed-brightgreen) ![Python](https://img.shields.io/badge/python-3.10+-blue)
+![Maple MCP Demo](https://img.shields.io/badge/Maple-2025-green) ![Tests](https://img.shields.io/badge/tests-passing-brightgreen) ![Python](https://img.shields.io/badge/python-3.10+-blue)
 
 ## What it does
 
@@ -12,7 +12,7 @@ Claude Desktop can directly edit your open Maple document:
 - **Write** text, equations, code blocks, sections, images, and highlights
 - **Edit** by matching content — insert, replace, or delete blocks
 - **Execute** Maple code and use results in the document
-- **Verify** rendering with screenshots of the Maple window
+- **Verify** rendering via Maple's PDF export — window-independent, full fidelity
 
 All equations are encoded as native Maple 2D Math — they render identically to hand-typed math in Document mode.
 
@@ -21,8 +21,8 @@ All equations are encoded as native Maple 2D Math — they render identically to
 ```
 Claude Desktop ←→ MCP Server (Python/stdio) ←→ Maple .mw file (XML)
                          ↓                             ↓
-                   maplec.dll (kernel)          Java Agent (reload)
-                   cmaple.exe (encoding)        AHK fallback
+             maplec.dll (warm kernel:           Java Agent (reload)
+             compute + encode + decode)         AHK fallback
 ```
 
 The server edits the .mw XML file directly (never `ET.write` — that corrupts base64), then tells Maple to reload via a Java Agent injected into Maple's JVM.
@@ -47,7 +47,7 @@ This will:
 1. Install the Python package
 2. Add the Java Agent to Maple's `launch.ini` (for in-place document reload)
 3. Add `maple` to Claude Desktop's MCP config
-4. Run the test suite (84 tests)
+4. Run the test suite
 
 ### Manual setup
 
@@ -88,8 +88,10 @@ Restart both Maple and Claude Desktop.
 | `replace_block` | Replace a matched block with new content |
 | `delete_block` | Delete a matched block (with safety checks) |
 | `append_content` | Append at document end with nested sections |
-| `undo` | Restore from .mw.bak backup |
-| `screenshot_maple` | Capture Maple window for visual verification |
+| `find_block` | Dry-run: resolve a match to its block index + text (no changes) |
+| `run_executable` | Compute the unrun {!…!}/{=…=} blocks so results appear |
+| `undo` | Restore the prior version (multi-level, out-of-tree backup ring) |
+| `screenshot_maple` | Render the document via Maple's PDF export to verify it |
 
 ## Markup syntax
 
@@ -125,7 +127,7 @@ Svar:  "{color:255,255,0}**Answer: {{m = 200*[[kg]]}}.**{/color}"
 ## How it works
 
 ### Equation encoding
-Equations are encoded using `InertForm:-Typeset` in a clean `cmaple.exe` subprocess — this preserves the unevaluated form (`3*4` shows as `3·4`, not `12`) and prevents variable contamination from the kernel session.
+Equations are encoded using `InertForm:-Typeset`, preserving the unevaluated form (`3*4` shows as `3·4`, not `12`). The statement runs in the warm in-process kernel wrapped in an anonymous proc, so its temp names stay scoped and never contaminate the user's session; package-loading statements (`with(Units:-Standard)`) run in a throwaway `cmaple.exe` instead, so they can't persist in the shared kernel.
 
 Units use a placeholder-based approach: each `[[unit]]` is replaced with a temporary name, encoded with InertForm, then the placeholders are substituted with native Maple unit Typesetting (`mfenced` + `msemantics="Unit"`).
 
@@ -141,7 +143,7 @@ A Java Agent (`reload-agent.jar`) injected via `-javaagent` in Maple's `launch.i
 pytest tests/ -v
 ```
 
-84 tests covering:
+Covering:
 - Equation encode/decode round-trip (basic math, units, multi-unit, Greek letters)
 - Document operations (insert, replace, delete, match logic, section scoping)
 - Format preservation (bold, italic, color, highlight, nested colors)
@@ -154,7 +156,6 @@ pytest tests/ -v
 - Equation round-trip is lossy for complex expressions (decoded equations don't always re-encode to identical XML)
 - `InertForm:-Parse` doesn't handle all Maple syntax (e.g. some procedural constructs)
 - LaTeX auto-conversion is basic — use Maple syntax for best results
-- Single-level undo only (one .mw.bak backup)
 - Windows only (maplec.dll, AHK, Java Agent paths)
 
 ## License

@@ -340,9 +340,13 @@ def insert_after(match: str, items: list[dict],
     """Insert content after a matched block.
 
     MATCHING: Copy a long, unique substring (15+ chars) directly from
-    read_document output. For section headings, include the # prefix.
-    Matching a section heading inserts AFTER the entire section.
-    Matching a text block inserts after just that block, inside its parent.
+    read_document output. Match on PROSE / headings / labels, NOT on rendered
+    math — decoded equations can be lossy, so a copied math substring may not
+    re-match. For a precise handle, use match="#N" (the [N] index read_document
+    prints); re-read first, as indices shift after edits. For section headings,
+    include the # prefix. Matching a section heading inserts AFTER the entire
+    section; matching a text block inserts after just that block, inside its parent.
+    (Unsure a match is unique? find_block resolves it without changing anything.)
 
     Each item is a dict with 'type' and 'content':
       - {"type": "text", "content": "Text with {{inline_math}} and **bold**"}
