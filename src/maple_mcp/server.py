@@ -72,6 +72,10 @@ not fully decode some unit blocks — use a screenshot to confirm.
 
 mcp = FastMCP("maple-mcp", instructions=MARKUP_GUIDE)
 _document_path: Path | None = None
+# True when the last reload FAILED — Maple's open window then holds the OLD
+# (pre-edit) content, so read_document must NOT auto-save it back to disk
+# (that would clobber the edit we just wrote). Cleared on a successful reload.
+_window_stale: bool = False
 
 
 def _get_path() -> Path | str:
@@ -147,6 +151,8 @@ def _save_and_edit(edit_fn) -> str:
 
     readback = edit_fn(str(path))
     reloaded = reload_in_maple(str(path))
+    global _window_stale
+    _window_stale = not reloaded
 
     hint = ""
     # The edit ALWAYS lands in the .mw file. Refreshing the open Maple window is a
@@ -287,7 +293,12 @@ def read_document(start: int = 0, end: int | None = None) -> list[TextContent | 
     if isinstance(path, str):
         return path
 
-    save_in_maple()
+    # Auto-save pushes Maple's window to disk to capture manual GUI edits — but
+    # only when the window is in sync. If the last reload failed, the window is
+    # stale and saving it would overwrite the edit we just wrote, so read the
+    # authoritative on-disk version instead.
+    if not _window_stale:
+        save_in_maple()
     entries = document.read_document(str(path), start, end)
     if not entries:
         return "Document is empty."
@@ -412,7 +423,8 @@ def delete_block(match: str, section: str | None = None,
     if isinstance(path, str):
         return path
     document.delete_block(str(path), match, section, occurrence, delete_section)
-    reload_in_maple(str(path))
+    global _window_stale
+    _window_stale = not reload_in_maple(str(path))
     return "Done."
 
 
