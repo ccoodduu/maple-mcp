@@ -51,6 +51,28 @@ class TestTS2StrCoverage:
         decoded = engine.decode_equation(b64)
         assert decoded.rstrip().endswith(":"), f"colon lost: {decoded}"
 
+    @pytest.mark.parametrize("expr,must", [
+        ("abs(x)", "abs("),            # was '(x)' — read as a different value
+        ("floor(x/2)", "floor("),
+        ("ceil(y)", "ceil("),
+        ("Sum(k, k = 1 .. n)", "Sum("),       # was '∑k=1nk' (bounds fused)
+        ("Product(i, i = 1 .. m)", "Product("),
+        ("limit(sin(x)/x, x = 0)", "limit("),
+        ("Diff(sin(x), x)", "diff("),         # was '()/(x)sin(x)' (empty numerator)
+        ("Diff(x^3, x)", "diff("),
+    ])
+    def test_decode_fidelity_and_roundtrip(self, engine, expr, must):
+        """abs/floor/ceil/sum/product/limit/derivative must decode to the proper
+        function (not bare parens / fused bounds / empty numerator) AND the decoded
+        form must itself re-encode (re-parseable Maple)."""
+        _, b64 = engine.encode_equation(expr)
+        assert b64, f"encode failed: {expr}"
+        decoded = engine.decode_equation(b64)
+        assert must in decoded, f"{expr} decoded as {decoded!r}, expected {must!r}"
+        engine._last_encode_error = None
+        _, b64b = engine.encode_equation(decoded)
+        assert b64b, f"decoded {decoded!r} did not re-encode: {engine._last_encode_error}"
+
 
 class TestDashAwareMatch:
     """render_pages must match headings containing em/en-dashes even though

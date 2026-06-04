@@ -713,7 +713,7 @@ class MapleEngine:
         self._ensure_kernel()
         self.execute('''
 TS2Str := proc(e)
-    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop, isunit;
+    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop, isunit, mu, bnd, body, fname, opn;
     if type(e, string) then
         if member(e, {"true","false","bold","italic","normal","none","bold-italic"}) then return "" end if;
         if e = "&infin;" then return "infinity" end if;
@@ -753,6 +753,46 @@ TS2Str := proc(e)
         end if;
         if lo = "" then s := cat("Int(", integ, ", ", var, ")")
         else s := cat("Int(", integ, ", ", var, " = ", lo, " .. ", hi, ")") end if
+    elif type(e, specfunc(Typesetting:-mrow)) and nops(e) >= 1
+         and type(op(1,e), specfunc(Typesetting:-munderover))
+         and (has(op(1,e), "&sum;") or has(op(1,e), "&prod;")) then
+        # Sum/Product: munderover(operator, lower "k = 1", upper "n") then body
+        mu := op(1,e);
+        lo := StringTools:-SubstituteAll(procname(op(2, mu)), "&equals;", " = ");
+        hi := procname(op(3, mu));
+        body := "";
+        for j from 2 to nops(e) do
+            if type(op(j,e), specfunc(Typesetting:-mo)) and has(op(j,e), "&ApplyFunction;") then next end if;
+            if type(op(j,e), specfunc(Typesetting:-mspace)) then next end if;
+            body := cat(body, procname(op(j,e)))
+        end do;
+        if has(mu, "&sum;") then fname := "Sum" else fname := "Product" end if;
+        s := cat(fname, "(", body, ", ", lo, " .. ", hi, ")")
+    elif type(e, specfunc(Typesetting:-mrow)) and nops(e) >= 1
+         and type(op(1,e), specfunc(Typesetting:-munder))
+         and has(op(1,e), "lim") then
+        # limit: munder(mo("lim"), "x &rarr; 0") then body -> limit(body, x = 0)
+        mu := op(1,e);
+        bnd := StringTools:-SubstituteAll(procname(op(2, mu)), "&rarr;", " = ");
+        body := "";
+        for j from 2 to nops(e) do
+            if type(op(j,e), specfunc(Typesetting:-mo)) and has(op(j,e), "&ApplyFunction;") then next end if;
+            if type(op(j,e), specfunc(Typesetting:-mspace)) then next end if;
+            body := cat(body, procname(op(j,e)))
+        end do;
+        s := cat("limit(", body, ", ", bnd, ")")
+    elif type(e, specfunc(Typesetting:-mrow)) and nops(e) >= 2
+         and type(op(1,e), specfunc(Typesetting:-mfrac))
+         and has(op(1,e), "&DifferentialD;")
+         and StringTools:-SubstituteAll(procname(op(1, op(1,e))), "&DifferentialD;", "") = "" then
+        # Leibniz derivative: mfrac(d, d*var) then body -> diff(body, var)
+        var := StringTools:-SubstituteAll(procname(op(2, op(1,e))), "&DifferentialD;", "");
+        body := "";
+        for j from 2 to nops(e) do
+            if type(op(j,e), specfunc(Typesetting:-mspace)) then next end if;
+            body := cat(body, procname(op(j,e)))
+        end do;
+        s := cat("diff(", body, ", ", var, ")")
     elif type(e, specfunc(Typesetting:-mfrac)) then
         s := cat("(", procname(op(1,e)), ")/(", procname(op(2,e)), ")")
     elif type(e, specfunc(Typesetting:-msup)) then
@@ -760,9 +800,12 @@ TS2Str := proc(e)
     elif type(e, specfunc(Typesetting:-msub)) then
         s := cat(procname(op(1,e)), "_", procname(op(2,e)))
     elif type(e, specfunc(Typesetting:-mfenced)) then
-        isunit := false;
+        isunit := false; opn := "";
         for j from 1 to nops(e) do
-            if type(op(j,e), `=`) and rhs(op(j,e)) = "Unit" then isunit := true end if
+            if type(op(j,e), `=`) then
+                if rhs(op(j,e)) = "Unit" then isunit := true end if;
+                if convert(lhs(op(j,e)), string) = "open" then opn := rhs(op(j,e)) end if
+            end if
         end do;
         ops := [];
         for j from 1 to nops(e) do
@@ -771,6 +814,14 @@ TS2Str := proc(e)
         end do;
         if isunit then
             s := cat("[[", cat(op(ops)), "]]")
+        elif opn = "&verbar;" then
+            s := cat("abs(", StringTools:-Join(ops, ", "), ")")
+        elif opn = "&lfloor;" then
+            s := cat("floor(", StringTools:-Join(ops, ", "), ")")
+        elif opn = "&lceil;" then
+            s := cat("ceil(", StringTools:-Join(ops, ", "), ")")
+        elif opn = "&Vert;" or opn = "&DoubleVerticalBar;" then
+            s := cat("Norm(", StringTools:-Join(ops, ", "), ")")
         else
             s := cat("(", StringTools:-Join(ops, ", "), ")")
         end if
