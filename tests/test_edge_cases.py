@@ -150,6 +150,40 @@ class TestDashAwareMatch:
         doc.close()
 
 
+class TestMatchByIndexAndFindBlock:
+    """Block-index addressing (match='#N'), the find_block dry-run, and candidate
+    previews in disambiguation errors. Kernel-free."""
+
+    def test_find_block_side_effect_free(self, tmp_mw):
+        from maple_mcp.document import find_block
+        from pathlib import Path
+        before = Path(tmp_mw).read_text(encoding="utf-8")
+        info = find_block(tmp_mw, "First block")
+        assert info["block"] >= 0 and "First block" in info["text"]
+        assert Path(tmp_mw).read_text(encoding="utf-8") == before
+
+    def test_match_by_block_index(self, tmp_mw):
+        from maple_mcp.document import insert_after, find_block, read_document
+        idx = find_block(tmp_mw, "Second block")["block"]
+        insert_after(tmp_mw, f"#{idx}", [{"type": "text", "content": "AFTER SECOND"}])
+        contents = " ".join(str(e.get("content", "")) for e in read_document(tmp_mw))
+        assert "AFTER SECOND" in contents
+
+    def test_index_out_of_range_raises(self, tmp_mw):
+        from maple_mcp.document import find_block
+        with pytest.raises(ValueError, match="out of range"):
+            find_block(tmp_mw, "#9999")
+
+    def test_ambiguous_lists_candidates(self, tmp_mw):
+        from maple_mcp.document import insert_after, replace_block
+        insert_after(tmp_mw, "First block", [{"type": "text", "content": "DUP marker"}])
+        insert_after(tmp_mw, "Second block", [{"type": "text", "content": "DUP marker"}])
+        with pytest.raises(ValueError, match="Ambiguous") as ei:
+            replace_block(tmp_mw, "DUP marker", [{"type": "text", "content": "x"}])
+        # the error must list the candidate block indices, not just a count
+        assert "[#" in str(ei.value)
+
+
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):
         """Empty document should return empty list."""

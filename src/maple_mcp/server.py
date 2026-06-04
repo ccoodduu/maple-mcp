@@ -180,6 +180,8 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
         t = entry.get("type")
         depth = entry.get("depth", 0)
         indent = "  " * depth
+        bidx = entry.get("block")
+        tag = f"[{bidx}] " if bidx is not None else ""
 
         if t == "image" and entry.get("encoded"):
             _flush_text()
@@ -187,22 +189,32 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
                 png_data = decode_maple_image(entry["encoded"])
                 result.append(_png_to_image_content(png_data))
             except Exception:
-                text_lines.append(f"{indent}[IMAGE: decode failed]")
+                text_lines.append(f"{tag}{indent}[IMAGE: decode failed]")
         elif t == "section":
             level = entry.get("level", 1)
             section_indent = "  " * (level - 1)
-            text_lines.append(f"{section_indent}{'#' * level} {entry.get('content', '')}")
+            text_lines.append(f"{tag}{section_indent}{'#' * level} {entry.get('content', '')}")
         elif t == "title":
-            text_lines.append(f"TITLE: {entry.get('content', '')}")
+            text_lines.append(f"{tag}TITLE: {entry.get('content', '')}")
         elif t == "empty":
-            text_lines.append("")
+            text_lines.append(tag.rstrip())
         else:
             content = entry.get("content", "")
             if isinstance(content, list):
                 content = "; ".join(content)
 
-            if len(content) > 500 or '<Equation' in content:
-                content = content[:100] + "... [TRUNCATED]"
+            # Never inject a truncation marker into the text the model is told to
+            # copy as `match` (matching is exact substring). For an over-long block,
+            # keep a copyable head AND tail; for a raw-XML leak, say so plainly.
+            if '<Equation' in content:
+                content = "[unreadable equation — verify with screenshot_maple]"
+            elif len(content) > 600:
+                keep = 240
+                omitted = len(content) - 2 * keep
+                content = (content[:keep]
+                           + f" …[{omitted} chars omitted — copy a unique run from the "
+                             f"head or tail, or target match=\"#{bidx}\"]… "
+                           + content[-keep:])
 
             prefix = "MAPLE> " if t == "code" else ""
             suffix = ""
@@ -214,7 +226,7 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
             if entry.get("align"):
                 suffix += f" [align:{entry['align']}]"
 
-            text_lines.append(f"{indent}{prefix}{content}{suffix}")
+            text_lines.append(f"{tag}{indent}{prefix}{content}{suffix}")
 
     _flush_text()
     return result
@@ -262,6 +274,10 @@ def read_document(start: int = 0, end: int | None = None) -> list[TextContent | 
     Equations show as {{expr}}, executable as {!expr!},
     highlights as {color:R,G,B}text{/color}.
     Images are returned as inline image content.
+
+    Each line is prefixed with its [block index]. You can target a block precisely
+    with match="#12" in the edit tools instead of copying text — but indices SHIFT
+    after every insert/delete, so re-read before relying on them.
 
     Args:
         start: First block to read (default: 0)
@@ -445,6 +461,30 @@ def run_executable() -> str:
     if resp.startswith("error"):
         return f"Execution failed: {resp}"
     return f"Done — executed unevaluated groups ({resp})."
+
+
+@mcp.tool()
+def find_block(match: str, section: str | None = None,
+               occurrence: int | None = None) -> str:
+    """Locate which block a match resolves to, WITHOUT changing anything.
+
+    A dry-run for the edit tools: use it to confirm a match hits the intended
+    block before insert/replace/delete — especially when a match may be ambiguous.
+    Returns the [block index] (usable as match="#N") and the block's current text.
+
+    Args:
+        match: Text substring (or "#N" block index) to resolve
+        section: Scope search to blocks inside this section title
+        occurrence: Which match to use if multiple (1-based)
+    """
+    path = _get_path()
+    if isinstance(path, str):
+        return path
+    try:
+        info = document.find_block(str(path), match, section, occurrence)
+    except ValueError as e:
+        return str(e)
+    return f"[#{info['block']}] ({info['tag']}) {info['text']}"
 
 
 @mcp.tool()

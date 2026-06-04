@@ -797,6 +797,25 @@ def _get_block_text(content: str, block: dict) -> str:
     return " ".join(p for p in parts if p)
 
 
+def _block_ordinal(blocks: list[dict], block: dict) -> int:
+    """The block's index in document order (matches read_document's [N] labels)."""
+    for i, b in enumerate(blocks):
+        if b["start"] == block["start"]:
+            return i
+    return -1
+
+
+def _block_preview(content: str, block: dict, width: int = 60) -> str:
+    txt = " ".join(_get_block_text(content, block).split())
+    return txt[:width] + ("…" if len(txt) > width else "")
+
+
+def _candidate_list(content: str, blocks: list[dict], candidates: list[dict]) -> str:
+    return "\n".join(
+        f"  {i + 1}: [#{_block_ordinal(blocks, b)}] {_block_preview(content, b)!r}"
+        for i, b in enumerate(candidates))
+
+
 def _find_matching_block(
     content: str,
     blocks: list[dict],
@@ -804,7 +823,18 @@ def _find_matching_block(
     section: str | None = None,
     occurrence: int | None = None,
 ) -> dict:
-    """Find a block by content matching."""
+    """Find a block by content matching, or by explicit index via match='#N'
+    (the [N] shown by read_document)."""
+    idx_match = re.fullmatch(r'#(\d+)', match.strip())
+    if idx_match:
+        n = int(idx_match.group(1))
+        if not (0 <= n < len(blocks)):
+            raise ValueError(
+                f"Block index #{n} is out of range (document has {len(blocks)} "
+                f"blocks, 0..{len(blocks) - 1}). Re-read — indices shift after edits."
+            )
+        return blocks[n]
+
     candidates = []
 
     for block in blocks:
@@ -840,18 +870,34 @@ def _find_matching_block(
     if occurrence is None:
         if len(candidates) > 1:
             raise ValueError(
-                f"Ambiguous: {len(candidates)} blocks match '{match}'. "
-                f"Use 'section' or 'occurrence' to disambiguate."
+                f"Ambiguous: {len(candidates)} blocks match '{match}'. Pass "
+                f"occurrence=N (1-based), match='#<block index>', or a longer, "
+                f"more unique match. Candidates:\n"
+                + _candidate_list(content, blocks, candidates)
             )
         return candidates[0]
 
     if occurrence > len(candidates):
         raise ValueError(
-            f"Occurrence {occurrence} requested but only {len(candidates)} "
-            f"matches found for '{match}'"
+            f"Occurrence {occurrence} requested but only {len(candidates)} block(s) "
+            f"match '{match}':\n" + _candidate_list(content, blocks, candidates)
         )
 
     return candidates[occurrence - 1]
+
+
+def find_block(file_path: str, match: str, section: str | None = None,
+               occurrence: int | None = None) -> dict:
+    """Resolve a match to a block WITHOUT mutating (a dry-run locate). Returns the
+    block index, tag, and current text — so an edit can be checked before writing."""
+    content = Path(file_path).read_text(encoding="utf-8")
+    blocks = _find_block_positions(content)
+    block = _find_matching_block(content, blocks, match, section, occurrence)
+    return {
+        "block": _block_ordinal(blocks, block),
+        "tag": block["tag"],
+        "text": _get_block_text(content, block),
+    }
 
 
 def _count_section_depth(content: str, position: int) -> int:
