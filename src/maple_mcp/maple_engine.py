@@ -681,9 +681,54 @@ class MapleEngine:
         content_b64 = ''.join(raw.split())
         return content_b64, content_b64
 
+    def _execute_clean(self, statement: str) -> str:
+        """Run an encode statement and return its printf output.
+
+        Routes through the WARM in-process kernel (no cmaple cold start — ~0.002s
+        vs ~0.2-2s) by wrapping the statement body in an anonymous proc, so its
+        temp names (ts, pl, i, _r, ...) are genuinely scoped and never leak into
+        the user's execute session. Statements that load a package globally
+        (with(...)) stay on a throwaway cmaple subprocess: a persistent
+        with(Units:-Standard) in the shared kernel would break Int/Sum typesetting
+        for later decodes. Falls back to the subprocess on any unexpected shape or
+        a kernel-level exception, so this can only be faster, never less correct.
+        """
+        if "with(" not in statement:
+            wrapped = self._proc_wrap(statement)
+            if wrapped is not None:
+                try:
+                    out = self.execute(wrapped)
+                except Exception:
+                    out = None
+                if out is not None:
+                    return self._strip_gc_status(out).strip()
+        return self._execute_clean_subprocess(statement)
+
     @staticmethod
-    def _execute_clean(statement: str) -> str:
-        """Execute a Maple statement in a clean subprocess (no user variables)."""
+    def _proc_wrap(statement: str) -> str | None:
+        """Wrap a `local <names>: <body>` encode statement in an anonymous proc so
+        the locals are truly scoped in the shared kernel (a top-level `local` does
+        NOT isolate in OpenMaple — it pollutes globals). Returns None if the shape
+        is unexpected, so the caller falls back to the isolated subprocess."""
+        import re
+        m = re.match(r'\s*local ([^:\n]+):\s*\n(.*)', statement, re.DOTALL)
+        if not m:
+            return None
+        names, body = m.group(1).strip(), m.group(2).strip()
+        return f"(proc() local {names}; {body} end proc)():"
+
+    @staticmethod
+    def _strip_gc_status(out: str) -> str:
+        import re
+        return re.sub(
+            r'(?:kilo)?bytes used=[\d,]+,?\s*alloc=[\d,]+,?\s*time=[\d.]+\s*',
+            '', out)
+
+    @staticmethod
+    def _execute_clean_subprocess(statement: str) -> str:
+        """Execute a Maple statement in a clean cmaple subprocess (no user
+        variables). Used for statements that load packages with with(...), which
+        must not persist in the shared kernel."""
         import subprocess
         cmaple = os.path.join(MAPLE_ROOT, "bin.X86_64_WINDOWS", "cmaple.exe")
         try:

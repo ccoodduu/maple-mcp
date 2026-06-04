@@ -184,6 +184,33 @@ class TestMatchByIndexAndFindBlock:
         assert "[#" in str(ei.value)
 
 
+class TestWarmKernelEncode:
+    """Encoding routes through the warm in-process kernel (proc-wrapped for
+    isolation). It must NOT pollute the user's session, and the with()-using path
+    must still work and not break later decodes."""
+
+    def test_encode_does_not_pollute_user_vars(self, engine):
+        engine.execute("i := 42: ts := 99: pl := 7:")
+        engine.encode_equation("x^2 + 3*x")          # internally uses local i, ts, pl
+        assert engine.execute("i").strip() == "42", "encode clobbered user var i"
+        assert engine.execute("ts").strip() == "99", "encode clobbered user var ts"
+        assert engine.execute("pl").strip() == "7", "encode clobbered user var pl"
+        engine.execute("i := 'i': ts := 'ts': pl := 'pl':")   # unassign
+
+    def test_units_operation_still_encodes(self, engine):
+        """The with(Units:-Standard) path stays on the isolated subprocess."""
+        engine._last_encode_error = None
+        _, b64 = engine.encode_equation("200*Unit('kg') => evaluate")
+        assert b64, f"units operation failed: {engine._last_encode_error}"
+
+    def test_decode_unaffected_by_units_operation(self, engine):
+        """After a units-loading operation, Typesetting decode must still work
+        (with(Units) must not have persisted in the shared kernel)."""
+        engine.encode_equation("200*Unit('kg') => evaluate")
+        _, ib = engine.encode_equation("Int(x^2, x = 0 .. 3)")
+        assert "Int(" in engine.decode_equation(ib)
+
+
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):
         """Empty document should return empty list."""
