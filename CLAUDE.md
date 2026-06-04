@@ -75,8 +75,13 @@ Equations use MAPLE syntax, not LaTeX. Auto-conversion from LaTeX is attempted b
 | `replace_block` | Replace matched block (refuses sections with children) |
 | `delete_block` | Delete matched block (refuses section headings unless confirmed) |
 | `append_content` | Append at document end with nested section support |
+| `find_block` | Dry-run: resolve a match (or `#N`) to its block index + text, no changes |
+| `run_executable` | Compute the unrun `{!…!}`/`{=…=}` blocks so results appear |
+| `list_unrun` | List unrun executable blocks (index + snippet) before running them |
 | `undo` | Restore prior version from the out-of-tree backup ring (multi-level) |
 | `screenshot_maple` | Render document to page images (Maple PDF export) to verify rendering |
+
+read_document prefixes each line with its `[N]` block index; edit tools accept `match="#N"`.
 
 ## Key Files
 
@@ -126,6 +131,8 @@ line. Manual steps (replace `<PROJECT_DIR>` with this repo's path):
 - Equation round-trip is lossy: decoded equations (e.g. `∫x²dx`) don't always re-encode to identical XML
 - `_count_section_depth` scans XML linearly - could be slow on very large documents
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax
+- Plot read-placeholder keys on a tag starting with `Plot`; verify the exact tag against a real plot-containing `.mw` (read-only, harmless if it doesn't fire)
+- Deferred (need a real `.mw` sample to reverse-engineer the XML safely, or they'd risk producing files Maple can't open): authoring plots/tables, equation-label numbers + cross-references, per-block `run_executable` results (needs a reload-agent protocol change)
 - `screenshot_maple` hangs (then times out → window-grab fallback) on documents with live embedded components (`EC-RTableBrowser` etc.): `WmiECRTableBrowserView.layoutView` sleeps waiting for the interactive component during off-window layout. Rare (~1/75 real assignments); such widget-heavy docs can't be rendered statically anyway.
 - `screenshot_maple` needs an ACTIVE, UNLOCKED desktop session: Maple's PDF formatter builds a Swing dialog (`WmiSectionOptionsDialog`) that requires a screen device, so export throws `HeadlessException`/"no screen devices" when the screen is locked or the process has no display. Works in normal interactive use (user at the machine); fails when the session is locked or run unattended. `export_pdf` detects this and returns an actionable message.
 - PDF export spawns a fresh Maple JVM (~5s cold start per call)

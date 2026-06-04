@@ -67,8 +67,9 @@ def _replace_units_in_expr(expr: str) -> str:
 def _latex_to_maple(expr: str) -> str:
     """Convert common LaTeX patterns to Maple syntax."""
     import re
-    # Detect LaTeX and convert
-    if '\\' in expr:
+    # Detect LaTeX and convert. Braced ^{}/_{} count as LaTeX too (they're not
+    # valid Maple — x^{2} would parse as x^(set) — so converting is always right).
+    if '\\' in expr or '^{' in expr or '_{' in expr:
         expr = expr.replace('\\cdot', '*')
         expr = expr.replace('\\times', '*')
         expr = expr.replace('\\,', '')
@@ -104,8 +105,16 @@ def _latex_to_maple(expr: str) -> str:
             den = expr[start2:end2]
             expr = expr[:idx] + f'({num})/({den})' + expr[end2+1:]
         expr = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', expr)
-        expr = re.sub(r'\\int_\{([^}]+)\}\^\{([^}]+)\}', r'Int(', expr)
+        # Definite integral: \int_{a}^{b} f dx -> Int(f, x = a .. b)
+        expr = re.sub(
+            r'\\int_\{([^}]+)\}\^\{([^}]+)\}\s*(.+?)\s*d\s*([a-zA-Z])\b',
+            r'Int(\3, \4 = \1 .. \2)', expr)
         expr = expr.replace('\\int', 'int')
+        # Relational / sign operators (longer names first so \leq isn't eaten by \le)
+        for _lx, _mp in (('\\leq', '<='), ('\\le', '<='), ('\\geq', '>='),
+                         ('\\ge', '>='), ('\\neq', '<>'), ('\\ne', '<>'),
+                         ('\\pm', '+-'), ('\\div', '/')):
+            expr = expr.replace(_lx, _mp)
         expr = expr.replace('\\pi', 'Pi')
         expr = expr.replace('\\infty', 'infinity')
         expr = expr.replace('\\alpha', 'alpha')
@@ -124,6 +133,24 @@ def _latex_to_maple(expr: str) -> str:
         expr = expr.replace('\\tan', 'tan')
         expr = expr.replace('\\exp', 'exp')
         expr = expr.replace('\\lim', 'limit')
+        # Braced sub/superscripts: x^{2}->x^(2), e^{-kt}->e^(-kt), a_{ij}->a[ij]
+        def _braced(s, marker, lo, hi):
+            while marker in s:
+                idx = s.find(marker)
+                start = idx + len(marker)
+                depth, end = 0, len(s)
+                for j in range(start, len(s)):
+                    if s[j] == '{':
+                        depth += 1
+                    elif s[j] == '}':
+                        if depth == 0:
+                            end = j
+                            break
+                        depth -= 1
+                s = s[:idx] + lo + s[start:end] + hi + s[end + 1:]
+            return s
+        expr = _braced(expr, '^{', '^(', ')')
+        expr = _braced(expr, '_{', '[', ']')
         # Clean up remaining backslashes
         expr = expr.replace('\\', '')
     return expr
@@ -407,7 +434,8 @@ def _backup(file_path: str) -> str | None:
     return _bk.push(file_path)
 
 
-def _commit(file_path: str, content: str, backup_path: str | None = None) -> None:
+def _commit(file_path: str, content: str, backup_path: str | None = None,
+            expected_mtime: float | None = None) -> None:
     """Write `content` ONLY if the whole document is still well-formed XML.
 
     Every edit splices a raw string; a mis-computed offset or an unescaped char
@@ -416,7 +444,18 @@ def _commit(file_path: str, content: str, backup_path: str | None = None) -> Non
     document first (read_document already ET-parses the file, so this is a fair,
     cheap invariant). On failure the file is left untouched and the just-made
     backup is discarded, so no phantom undo step is left behind.
+
+    If `expected_mtime` is given and the file changed on disk since it was read
+    (Maple auto-saved, or another edit ran), abort — our splice offsets are stale.
     """
+    path = Path(file_path)
+    if expected_mtime is not None and path.exists() and path.stat().st_mtime != expected_mtime:
+        from maple_mcp import backup as _bk
+        _bk.discard(backup_path)
+        raise ValueError(
+            "Edit aborted — the file changed on disk since it was read (Maple may "
+            "have auto-saved, or another edit ran). Re-read the document and retry "
+            "so the edit applies to the current content.")
     try:
         # Encode to bytes: the .mw carries an XML encoding declaration, which
         # ET.fromstring rejects on a str ("encoding declaration not supported").
@@ -434,6 +473,7 @@ def _commit(file_path: str, content: str, backup_path: str | None = None) -> Non
 def _append_blocks(file_path: str, blocks, backup_path: str | None = None) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
+    mtime = path.stat().st_mtime
 
     close_tag = "</Worksheet>"
     idx = content.rfind(close_tag)
@@ -443,7 +483,7 @@ def _append_blocks(file_path: str, blocks, backup_path: str | None = None) -> st
     new_xml = "\n".join(_block_to_xml(b) for b in blocks)
     content = content[:idx] + new_xml + "\n" + content[idx:]
 
-    _commit(file_path, content, backup_path)
+    _commit(file_path, content, backup_path, expected_mtime=mtime)
     return str(path)
 
 
@@ -594,6 +634,12 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                 if ie:
                     outputs.append(ie)
 
+        # A plot produces no Text-field/Equation/Image entry, so it would be
+        # INVISIBLE in read — and the LLM might delete the "empty-looking" block.
+        # Surface a placeholder so it's seen and targetable. (Maple stores plots
+        # under elements whose tag ends in "Plot", e.g. Plot / Plot-Window.)
+        has_plot = any(el.tag.startswith("Plot") for el in group.iter())
+
         if images:
             for img in images:
                 entries.append({
@@ -620,6 +666,9 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                 if group_align:
                     entry["align"] = group_align
                 entries.append(entry)
+        elif has_plot:
+            entries.append({"type": "plot",
+                            "content": "[PLOT: graph — view with screenshot_maple]"})
 
     block_idx = [0]
     eff_end = end if end is not None else float("inf")
@@ -996,6 +1045,7 @@ def insert_after(file_path: str, match: str, items: list[dict],
                  section: str | None = None, occurrence: int | None = None) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
+    mtime = path.stat().st_mtime
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
 
@@ -1007,7 +1057,7 @@ def insert_after(file_path: str, match: str, items: list[dict],
 
     new_content = content[:block["end"]] + "\n" + new_xml + content[block["end"]:]
     bkp = _backup(file_path)
-    _commit(file_path, new_content, bkp)
+    _commit(file_path, new_content, bkp, expected_mtime=mtime)
     return _readback(new_xml)
 
 
@@ -1015,6 +1065,7 @@ def insert_before(file_path: str, match: str, items: list[dict],
                   section: str | None = None, occurrence: int | None = None) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
+    mtime = path.stat().st_mtime
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
 
@@ -1026,7 +1077,7 @@ def insert_before(file_path: str, match: str, items: list[dict],
 
     new_content = content[:block["start"]] + new_xml + "\n" + content[block["start"]:]
     bkp = _backup(file_path)
-    _commit(file_path, new_content, bkp)
+    _commit(file_path, new_content, bkp, expected_mtime=mtime)
     return _readback(new_xml)
 
 
@@ -1034,6 +1085,7 @@ def replace_block(file_path: str, match: str, items: list[dict],
                   section: str | None = None, occurrence: int | None = None) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
+    mtime = path.stat().st_mtime
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
 
@@ -1054,7 +1106,7 @@ def replace_block(file_path: str, match: str, items: list[dict],
 
     new_content = content[:block["start"]] + new_xml + content[block["end"]:]
     bkp = _backup(file_path)
-    _commit(file_path, new_content, bkp)
+    _commit(file_path, new_content, bkp, expected_mtime=mtime)
     return _readback(new_xml)
 
 
@@ -1063,6 +1115,7 @@ def delete_block(file_path: str, match: str,
                  delete_section: bool = False) -> str:
     path = Path(file_path)
     content = path.read_text(encoding="utf-8")
+    mtime = path.stat().st_mtime
     blocks = _find_block_positions(content)
     block = _find_matching_block(content, blocks, match, section, occurrence)
 
@@ -1080,7 +1133,7 @@ def delete_block(file_path: str, match: str,
 
     new_content = content[:block["start"]] + content[block["end"]:]
     bkp = _backup(file_path)
-    _commit(file_path, new_content, bkp)
+    _commit(file_path, new_content, bkp, expected_mtime=mtime)
 
 
 def _extract_align(text: str) -> tuple[str, str | None]:

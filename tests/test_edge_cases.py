@@ -233,6 +233,47 @@ class TestWarmKernelEncode:
         assert "Int(" in engine.decode_equation(ib)
 
 
+class TestLatexConversion:
+    @pytest.mark.parametrize("latex,expected_sub", [
+        ("x^{2}", "x^(2)"),
+        ("e^{-kt}", "e^(-kt)"),
+        ("a_{ij}", "a[ij]"),
+        (r"\frac{a}{b}", "(a)/(b)"),
+        (r"\sqrt{x+1}", "sqrt(x+1)"),
+        (r"x \le 5", "<="),
+        (r"x \geq 3", ">="),
+        (r"a \neq b", "<>"),
+        (r"\int_{0}^{1} x dx", "Int("),
+    ])
+    def test_latex_to_maple(self, latex, expected_sub):
+        from maple_mcp.document import _latex_to_maple
+        out = _latex_to_maple(latex)
+        assert expected_sub in out, f"{latex!r} -> {out!r}"
+
+
+class TestChangeDetectionAndPlot:
+    def test_edit_aborts_if_file_changed(self, tmp_mw):
+        import os
+        from pathlib import Path
+        from maple_mcp.document import _commit
+        content = Path(tmp_mw).read_text(encoding="utf-8")
+        old = Path(tmp_mw).stat().st_mtime
+        os.utime(tmp_mw, (old + 5, old + 5))   # something else saved the file
+        with pytest.raises(ValueError, match="changed on disk"):
+            _commit(tmp_mw, content, None, expected_mtime=old)
+
+    def test_plot_only_group_surfaced(self, tmp_path):
+        from maple_mcp.document import read_document
+        mw = tmp_path / "p.mw"
+        mw.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?><Worksheet>'
+            '<Presentation-Block><Group view="presentation">'
+            '<Plot height="200" width="300"></Plot>'
+            '</Group></Presentation-Block></Worksheet>', encoding="utf-8")
+        entries = read_document(str(mw))
+        assert any(e.get("type") == "plot" for e in entries), entries
+
+
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):
         """Empty document should return empty list."""

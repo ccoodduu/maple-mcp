@@ -493,6 +493,30 @@ def run_executable() -> str:
 
 
 @mcp.tool()
+def list_unrun() -> str:
+    """List the executable blocks that haven't been run yet (input with no output),
+    with their [block index] and a snippet — so you can see exactly what
+    run_executable will compute before calling it.
+    """
+    path = _get_path()
+    if isinstance(path, str):
+        return path
+    unrun = []
+    for e in document.read_document(str(path)):
+        content = e.get("content", "")
+        if isinstance(content, list):
+            content = "; ".join(content)
+        is_exec = e.get("type") == "code" or "{!" in content or "{=" in content
+        if is_exec and not e.get("output"):
+            snippet = content if len(content) <= 80 else content[:80] + "…"
+            unrun.append(f"[{e.get('block')}] {snippet}")
+    if not unrun:
+        return "No unrun executable blocks — every {!…!}/{=…=} block already has output."
+    return ("Unrun executable blocks (call run_executable to compute them):\n"
+            + "\n".join(unrun))
+
+
+@mcp.tool()
 def find_block(match: str, section: str | None = None,
                occurrence: int | None = None) -> str:
     """Locate which block a match resolves to, WITHOUT changing anything.
