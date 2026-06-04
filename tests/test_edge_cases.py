@@ -184,6 +184,28 @@ class TestMatchByIndexAndFindBlock:
         assert "[#" in str(ei.value)
 
 
+class TestGlyphNormalizerAndCache:
+    """Shared glyph normalizer (one source of truth for decode + text extraction)
+    and the decode cache."""
+
+    def test_normalizer_canonicalizes(self):
+        from maple_mcp.maple_engine import normalize_decoded_glyphs
+        assert normalize_decoded_glyphs("x≔5") == "x:=5"
+        assert normalize_decoded_glyphs("a⋅b") == "a*b"
+        assert normalize_decoded_glyphs("p≤q≥r≠s") == "p<=q>=r<>s"
+        assert normalize_decoded_glyphs("π+∞") == "Pi+infinity"
+
+    def test_decode_entities_shares_normalizer(self):
+        # the drift fix: ≔ is now handled in document text extraction too
+        from maple_mcp.document import _decode_entities
+        assert _decode_entities("y≔3") == "y:=3"
+
+    def test_decode_cache_hit(self, engine):
+        _, b64 = engine.encode_equation("x^2 + 1")
+        assert engine.decode_equation(b64) == engine.decode_equation(b64)
+        assert b64 in engine._decode_cache
+
+
 class TestWarmKernelEncode:
     """Encoding routes through the warm in-process kernel (proc-wrapped for
     isolation). It must NOT pollute the user's session, and the with()-using path

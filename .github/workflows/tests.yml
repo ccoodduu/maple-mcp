@@ -1,0 +1,22 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test deps
+        # The kernel (maplec.dll) is Windows/Maple-only and loaded lazily, so the
+        # kernel-backed tests skip here; the pure-Python subset (matching, raw-splice
+        # safety, glyph normalization, image codec, render fuzzy-match, page specs)
+        # still runs and gives PRs a signal without a Maple license.
+        run: python -m pip install --upgrade pip pytest pymupdf Pillow
+      - name: Run pure-Python tests
+        run: python -m pytest tests/ -q

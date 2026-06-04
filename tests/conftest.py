@@ -9,9 +9,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 @pytest.fixture(scope="session")
 def engine():
-    """Use the module-level singleton (only one kernel per process)."""
+    """Use the module-level singleton (only one kernel per process).
+
+    Skips (not errors) when the Maple kernel is unavailable, so the pure-Python
+    tests still run on a box without Maple (and in CI)."""
     from maple_mcp.maple_engine import engine as eng
-    eng._ensure_ts2str()
+    try:
+        eng._ensure_ts2str()
+    except (FileNotFoundError, RuntimeError, OSError) as e:
+        pytest.skip(f"Maple kernel unavailable: {e}")
     return eng
 
 

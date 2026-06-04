@@ -16,6 +16,13 @@ def _next_label_num(root: ET.Element) -> int:
     return max_num + 1
 
 
+def _next_label_num_from_text(content: str) -> int:
+    """Next L-label over the already-read file text — avoids a second full
+    ET.parse per edit (the edit functions have already read `content`)."""
+    nums = [int(n) for n in re.findall(r'labelreference="L(\d+)"', content)]
+    return (max(nums) + 1) if nums else 1
+
+
 def _group_attribs(label_num: int, inline_output: bool = False) -> dict:
     return {
         "view": "presentation",
@@ -452,21 +459,8 @@ def _decode_equation_text(eq_el: ET.Element) -> str:
 
 
 def _decode_entities(text: str) -> str:
-    import html
-    # Maple custom entities (not in HTML standard)
-    text = text.replace('&uminus0;', '-')
-    text = text.replace('&it;', '*')
-    text = html.unescape(text)
-    # Normalize visible operator glyphs the encoder cannot re-parse
-    for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>'),
-                   ('π', 'Pi'), ('∞', 'infinity')):
-        text = text.replace(_g, _a)
-    # Remove invisible Unicode characters
-    text = text.replace('\u2061', '')   # ApplyFunction
-    text = text.replace('\u2062', '*')  # InvisibleTimes → *
-    text = text.replace('\u2146', '')   # DifferentialD
-    text = text.replace('\u2145', '')   # DoubleStruckCapitalD
-    return text
+    from maple_mcp.maple_engine import normalize_decoded_glyphs
+    return normalize_decoded_glyphs(text)
 
 
 def _extract_text(el: ET.Element) -> str:
@@ -835,25 +829,29 @@ def _find_matching_block(
             )
         return blocks[n]
 
+    # Memoize block text — _get_block_text ET-parses and kernel-decodes each
+    # equation, so computing it once per block (not once per block PAIR) turns the
+    # section-scoped search from O(B^2) into O(B). The decode cache compounds this.
+    _text_cache: dict[int, str] = {}
+
+    def _text(b: dict) -> str:
+        key = b["start"]
+        if key not in _text_cache:
+            _text_cache[key] = _get_block_text(content, b)
+        return _text_cache[key]
+
+    # Resolve the matching section span(s) ONCE, then test each block by interval.
+    section_spans = None
+    if section:
+        section_spans = [(b["start"], b["end"]) for b in blocks
+                         if b["tag"] == "section" and section in _text(b)]
+
     candidates = []
-
     for block in blocks:
-        text = _get_block_text(content, block)
-
-        if section:
-            in_section = False
-            for other in blocks:
-                if other["tag"] != "section":
-                    continue
-                sec_text = _get_block_text(content, other)
-                if section in sec_text:
-                    if other["start"] <= block["start"] < other["end"]:
-                        in_section = True
-                        break
-            if not in_section:
-                continue
-
-        if match in text:
+        if section_spans is not None and not any(
+                s <= block["start"] < e for s, e in section_spans):
+            continue
+        if match in _text(block):
             candidates.append(block)
 
     # Filter out Sections when a PB inside them also matches
@@ -993,8 +991,7 @@ def insert_after(file_path: str, match: str, items: list[dict],
 
     _validate_heading_depth(content, block["end"], items)
 
-    root = ET.parse(file_path).getroot()
-    label = _next_label_num(root)
+    label = _next_label_num_from_text(content)
     new_blocks, _, _ = _build_nested(items, 0, label)
     new_xml = "\n".join(_block_to_xml(b) for b in new_blocks)
 
@@ -1013,8 +1010,7 @@ def insert_before(file_path: str, match: str, items: list[dict],
 
     _validate_heading_depth(content, block["start"], items)
 
-    root = ET.parse(file_path).getroot()
-    label = _next_label_num(root)
+    label = _next_label_num_from_text(content)
     new_blocks, _, _ = _build_nested(items, 0, label)
     new_xml = "\n".join(_block_to_xml(b) for b in new_blocks)
 
@@ -1042,8 +1038,7 @@ def replace_block(file_path: str, match: str, items: list[dict],
                 f"Replacing would destroy all content. Match a specific block inside instead."
             )
 
-    root = ET.parse(file_path).getroot()
-    label = _next_label_num(root)
+    label = _next_label_num_from_text(content)
     new_blocks, _, _ = _build_nested(items, 0, label)
     new_xml = "\n".join(_block_to_xml(b) for b in new_blocks)
 
@@ -1168,8 +1163,8 @@ def _build_nested(items: list[dict], start: int, label_start: int,
 
 
 def insert_content(file_path: str, items: list[dict]) -> str:
-    root = ET.parse(file_path).getroot()
-    label = _next_label_num(root)
+    content = Path(file_path).read_text(encoding="utf-8")
+    label = _next_label_num_from_text(content)
     blocks, _, _ = _build_nested(items, 0, label)   # may raise before any backup
     bkp = _backup(file_path)
     _append_blocks(file_path, blocks, bkp)

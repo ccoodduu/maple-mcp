@@ -72,6 +72,28 @@ def _load_maplec(dll_path):
     return maplec
 
 
+def normalize_decoded_glyphs(text: str) -> str:
+    """Canonicalize Maple's display glyphs/entities back to re-parseable ASCII
+    Maple. SINGLE source of truth shared by the equation decoder and document text
+    extraction, so read output always matches what the encoder can re-parse (the
+    two copies had already drifted — ≔ was handled in only one). Idempotent."""
+    import html
+    text = text.replace('&uminus0;', '-')
+    text = text.replace('&it;', '*')
+    text = html.unescape(text)
+    # Invisible / structural Unicode
+    text = text.replace('⁡', '')    # ApplyFunction
+    text = text.replace('⁢', '*')   # InvisibleTimes -> *
+    text = text.replace('≔', ':=')  # coloneq (≔) -> :=
+    text = text.replace('ⅆ', '')    # DifferentialD
+    text = text.replace('ⅅ', '')    # DoubleStruckCapitalD
+    # Visible operator glyphs the encoder cannot re-parse
+    for g, a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>'),
+                 ('π', 'Pi'), ('∞', 'infinity')):
+        text = text.replace(g, a)
+    return text
+
+
 class MapleEngine:
     def __init__(self):
         self._maplec = None
@@ -80,6 +102,10 @@ class MapleEngine:
         self._error_output = []
         self._cb_refs = []
         self._ts2str_defined = False
+        # decode_equation is deterministic, so cache by base64 key. Eliminates the
+        # temp-file + kernel round-trip when the same equation is decoded again
+        # (read_document AND every section-matching pass decode the same blobs).
+        self._decode_cache: dict[str, tuple[str, str | None]] = {}
 
     def _ensure_kernel(self):
         if self._kv is not None:
@@ -911,6 +937,10 @@ end proc:
 
     def decode_equation(self, b64_data: str) -> str:
         import base64
+        cached = self._decode_cache.get(b64_data)
+        if cached is not None:
+            self._last_eq_background = cached[1]
+            return cached[0]
         self._ensure_ts2str()
 
         decoded = base64.b64decode(b64_data)
@@ -936,23 +966,7 @@ end proc:
         if "Error" in result:
             return ""
 
-        import html
-        result = result.strip('"')
-        # Maple custom entities (not in HTML standard)
-        result = result.replace('&uminus0;', '-')
-        result = result.replace('&it;', '*')
-        result = html.unescape(result)
-        # Remove invisible Unicode characters
-        result = result.replace('\u2061', '')   # ApplyFunction
-        result = result.replace('\u2062', '*')  # InvisibleTimes → *
-        result = result.replace('\u2254', ':=')  # coloneq → :=
-        result = result.replace('\u2146', '')   # DifferentialD
-        result = result.replace('\u2145', '')   # DoubleStruckCapitalD
-        result = result.replace('  ', ' ')
-        # Normalize visible operator glyphs the encoder cannot re-parse
-        for _g, _a in (('⋅', '*'), ('−', '-'), ('≤', '<='), ('≥', '>='), ('≠', '<>'),
-                       ('π', 'Pi'), ('∞', 'infinity')):
-            result = result.replace(_g, _a)
+        result = normalize_decoded_glyphs(result.strip('"')).replace('  ', ' ')
 
         # Detect highlight color in the raw Typesetting data
         self._last_eq_background = None
@@ -962,7 +976,11 @@ end proc:
             if bg_match:
                 self._last_eq_background = bg_match.group(1)
 
-        return result.strip()
+        out = result.strip()
+        if len(self._decode_cache) > 4096:
+            self._decode_cache.clear()
+        self._decode_cache[b64_data] = (out, self._last_eq_background)
+        return out
 
     def get_help(self, topic: str) -> str:
         return self.execute(f"help({topic})")
