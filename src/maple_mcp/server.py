@@ -218,6 +218,12 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
             text_lines.append(f"{tag}{section_indent}{'#' * level} {entry.get('content', '')}")
         elif t == "title":
             text_lines.append(f"{tag}TITLE: {entry.get('content', '')}")
+        elif t == "table":
+            rows = entry.get("rows", [])
+            ncol = max((len(r) for r in rows), default=0)
+            text_lines.append(f"{tag}{indent}[TABLE {len(rows)}×{ncol}]")
+            for r in rows:
+                text_lines.append(f"{indent}  | " + " | ".join(r) + " |")
         elif t == "empty":
             text_lines.append(tag.rstrip())
         else:

@@ -576,6 +576,27 @@ def block_count(file_path: str) -> int:
     return len(_find_block_positions(content))
 
 
+def _table_rows(table_el: ET.Element) -> list[list[str]]:
+    """Extract a <Table> as a grid of decoded cell strings (row-major). A cell
+    holds either a Presentation-Block/Equation (math) or a bare Text-field (text);
+    both are read via _extract_text, so cells show {{math}}/units like normal."""
+    rows = []
+    for row in table_el.findall("Table-Row"):
+        cells = []
+        for cell in row.findall("Table-Cell"):
+            parts = []
+            for tf in cell.iter("Text-field"):
+                if "Output" in tf.get("style", ""):
+                    continue
+                txt = _extract_text(tf)
+                if txt:
+                    parts.append(txt)
+            cells.append(" ".join(parts).strip())
+        if any(cells):
+            rows.append(cells)
+    return rows
+
+
 def read_document(file_path: str, start: int = 0, end: int | None = None) -> list[dict]:
     path = Path(file_path)
     if not path.exists():
@@ -700,6 +721,17 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                 nesting_depth[0] -= 1
             elif child.tag == "Presentation-Block":
                 if start <= block_idx[0] < eff_end:
+                    tbl = child.find(".//Table")
+                    if tbl is not None:
+                        # A PB wrapping a TaskRegion/Table (the cells' groups would
+                        # otherwise be processed piecemeal). Surface the grid instead.
+                        rows = _table_rows(tbl)
+                        if rows:
+                            entries.append({"type": "table", "rows": rows,
+                                            "block": block_idx[0],
+                                            "depth": nesting_depth[0]})
+                        block_idx[0] += 1
+                        continue
                     pre_len = len(entries)
                     for group in child.iter("Group"):
                         _process_group(group)
@@ -722,6 +754,19 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                             entry["block"] = block_idx[0]
                         entry["depth"] = nesting_depth[0]
                 block_idx[0] += 1
+            elif child.tag == "TaskRegion":
+                # Tables (and other content) live inside TaskRegions, which _walk
+                # would otherwise skip — making the content invisible to read.
+                _walk(child)
+            elif child.tag == "Table":
+                # A table directly under a Section/Worksheet/TaskRegion. Surface the
+                # cell grid so it isn't invisible. Read-only (no [N] index): edit
+                # cells by their text via substring matching.
+                if start <= block_idx[0] < eff_end:
+                    rows = _table_rows(child)
+                    if rows:
+                        entries.append({"type": "table", "rows": rows,
+                                        "depth": nesting_depth[0]})
 
     _walk(root)
 

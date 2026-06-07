@@ -290,6 +290,38 @@ class TestChangeDetectionAndPlot:
         assert code and any("PLOT" in str(o) for o in (code[0].get("output") or []))
 
 
+class TestTableRead:
+    """Tables were invisible in read (they live in a TaskRegion read_document
+    didn't recurse into). They must now surface as a grid, whether the table is a
+    direct child or wrapped in a Presentation-Block. Kernel-free (text cells)."""
+
+    def test_table_direct_child_surfaced(self, tmp_path):
+        from maple_mcp.document import read_document
+        mw = tmp_path / "t.mw"
+        mw.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?><Worksheet>'
+            '<Table width="100%"><Table-Column weight="1"/><Table-Column weight="1"/>'
+            '<Table-Row><Table-Cell><Text-field style="Text">x</Text-field></Table-Cell>'
+            '<Table-Cell><Text-field style="Text">y</Text-field></Table-Cell></Table-Row>'
+            '<Table-Row><Table-Cell><Text-field style="Text">1</Text-field></Table-Cell>'
+            '<Table-Cell><Text-field style="Text">2</Text-field></Table-Cell></Table-Row>'
+            '</Table></Worksheet>', encoding="utf-8")
+        tbls = [e for e in read_document(str(mw)) if e.get("type") == "table"]
+        assert tbls and tbls[0]["rows"] == [["x", "y"], ["1", "2"]]
+
+    def test_table_inside_presentation_block(self, tmp_path):
+        from maple_mcp.document import read_document
+        mw = tmp_path / "t.mw"
+        mw.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?><Worksheet>'
+            '<Presentation-Block><TaskRegion><Table><Table-Column weight="1"/>'
+            '<Table-Row><Table-Cell><Text-field style="Text">cellA</Text-field>'
+            '</Table-Cell></Table-Row></Table></TaskRegion></Presentation-Block>'
+            '</Worksheet>', encoding="utf-8")
+        tbls = [e for e in read_document(str(mw)) if e.get("type") == "table"]
+        assert tbls and tbls[0]["rows"] == [["cellA"]]
+
+
 class TestEdgeCases:
     def test_empty_document(self, tmp_path):
         """Empty document should return empty list."""
