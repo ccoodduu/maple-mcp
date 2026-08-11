@@ -55,7 +55,7 @@ def _force_utf8_subprocess():
     subprocess.run = patched
 
 
-from maple_mcp.maple_engine import engine, MAPLE_ROOT  # noqa: E402
+from maple_mcp.maple_engine import engine, MAPLE_ROOT, maple_version  # noqa: E402,F401
 from maple_mcp.document import _replace_units_in_expr, _latex_to_maple  # noqa: E402
 
 CORPUS = os.path.join(HERE, "edgecase_corpus.json")
@@ -64,15 +64,6 @@ GOLDEN = os.path.join(ROOT, "tests", "golden", "maple-baseline.json")
 
 # Best to worst. A move down this list is a regression, up is an improvement.
 BUCKETS = ["BYTE_IDENTICAL", "RENDER_STABLE", "DRIFTED", "REENCODE_FAIL", "DECODE_BAD"]
-
-
-def maple_version():
-    """Read the Maple version without starting the kernel (so it works unlicensed)."""
-    try:
-        with open(os.path.join(MAPLE_ROOT, "license", "version.txt"), encoding="utf-8") as fh:
-            return fh.readline().strip()
-    except OSError:
-        return "unknown"
 
 
 def kernel_available():

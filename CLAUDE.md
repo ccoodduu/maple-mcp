@@ -143,7 +143,11 @@ bundled JDK.
 Prefer `install.ps1` — it computes the project dir and writes the correct `-javaagent`
 line. Manual steps (replace `<PROJECT_DIR>` with this repo's path):
 
-1. Maple 2025 installed at `C:\Program Files\Maple 2025`
+1. Maple installed under `C:\Program Files\Maple <year>`. Both `install.ps1` and
+   `maple_engine.find_maple_root()` pick the newest install that actually has
+   kernel binaries (so uninstall leftovers are skipped); `MAPLE` overrides the
+   choice and is never second-guessed. `maple_engine.maple_version()` reads the
+   version without starting the kernel, so it works on an expired licence.
 2. `launch.ini`: add `java_args=-javaagent:<PROJECT_DIR>/reload-agent.jar`
 3. AHK v2 at `<LOCALAPPDATA>\Programs\AutoHotkey\v2\AutoHotkey64.exe`
 4. User runs Maple inside AHK wrapper (`maple-windows.ahk`) - Maple's SunAwtFrame is child of AutoHotkeyGUI

@@ -1,8 +1,80 @@
 import ctypes
 import os
+import re
 import sys
 
-MAPLE_ROOT = os.environ.get("MAPLE", r"C:\Program Files\Maple 2025")
+# Directory names like "Maple 2025" / "Maple 2025.2". Deliberately anchored so
+# sibling products ("MapleSim 2025") are not mistaken for a Maple install.
+_MAPLE_DIR_RE = re.compile(r"Maple\s+(\d{4})(?:\.(\d+))?", re.IGNORECASE)
+
+_INSTALL_PARENTS = (
+    os.environ.get("ProgramW6432") or r"C:\Program Files",
+    os.environ.get("ProgramFiles") or r"C:\Program Files",
+)
+
+_FALLBACK_ROOT = r"C:\Program Files\Maple" if sys.platform == "win32" else "/opt/maple"
+
+
+def _has_kernel(root):
+    """Whether `root` looks like a real install rather than uninstall leftovers
+    (an removed Maple can leave lib/ and license/ behind with no binaries)."""
+    binaries = os.path.join(root, "bin.X86_64_WINDOWS")
+    return any(os.path.isfile(os.path.join(binaries, name))
+               for name in ("maplec.dll", "cmaple.exe"))
+
+
+def _maple_candidates(parents):
+    """(sort key, path) for every directory that looks like a Maple install."""
+    found, seen = [], set()
+    for parent in parents:
+        if not parent or parent in seen:
+            continue
+        seen.add(parent)
+        try:
+            entries = os.listdir(parent)
+        except OSError:
+            continue
+        for name in entries:
+            match = _MAPLE_DIR_RE.fullmatch(name.strip())
+            full = os.path.join(parent, name)
+            if match and os.path.isdir(full):
+                found.append(((int(match.group(1)), int(match.group(2) or 0)), full))
+    found.sort(key=lambda item: item[0], reverse=True)
+    return found
+
+
+def find_maple_root(explicit=None, parents=None):
+    """Resolve which Maple installation to use.
+
+    Pinning a year here meant every Maple upgrade broke the server at import
+    time. Order: an explicit MAPLE wins outright (it is how you select a
+    non-default install, so it must not be second-guessed), otherwise take the
+    newest install that actually has kernel binaries.
+    """
+    if explicit:
+        return explicit
+    candidates = _maple_candidates(_INSTALL_PARENTS if parents is None else parents)
+    for _, path in candidates:
+        if _has_kernel(path):
+            return path
+    # A Maple directory exists but has no binaries. Return it anyway so the
+    # eventual "Could not find maplec DLL in ..." names something real that the
+    # user can go look at, rather than an invented path.
+    return candidates[0][1] if candidates else _FALLBACK_ROOT
+
+
+def maple_version(root=None):
+    """Maple's version string, read WITHOUT starting the kernel — so it still
+    works on an expired licence. "unknown" when it cannot be read."""
+    path = os.path.join(root or MAPLE_ROOT, "license", "version.txt")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return fh.readline().strip() or "unknown"
+    except OSError:
+        return "unknown"
+
+
+MAPLE_ROOT = find_maple_root(os.environ.get("MAPLE"))
 os.environ["MAPLE"] = MAPLE_ROOT
 
 _maple_bin = os.path.join(MAPLE_ROOT, "bin.X86_64_WINDOWS")
@@ -47,7 +119,15 @@ def _find_maplec_dll():
         if target in files:
             return os.path.join(root, target)
 
-    for entry in os.listdir(MAPLE_ROOT):
+    # Missing/unreadable root must return None so _ensure_kernel can raise the
+    # message that names MAPLE_ROOT and tells the user to set MAPLE — a raw
+    # WinError 3 from listdir says nothing about how to fix it.
+    try:
+        entries = os.listdir(MAPLE_ROOT)
+    except OSError:
+        return None
+
+    for entry in entries:
         full = os.path.join(MAPLE_ROOT, entry)
         if os.path.isdir(full) and entry.startswith("bin"):
             for root, _, files in os.walk(full):
