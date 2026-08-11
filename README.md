@@ -1,8 +1,8 @@
 # Maple MCP Server
 
-MCP server that lets Claude read, write, and edit **Maple 2025 Document mode** (.mw) assignments — with proper 2D Math, units, sections, formatting, and images.
+MCP server that lets Claude read, write, and edit **Maple Document mode** (.mw) assignments — with proper 2D Math, units, sections, formatting, and images.
 
-![Maple MCP Demo](https://img.shields.io/badge/Maple-2025-green) ![Tests](https://img.shields.io/badge/tests-passing-brightgreen) ![Python](https://img.shields.io/badge/python-3.10+-blue)
+![Maple MCP Demo](https://img.shields.io/badge/Maple-2025%20%7C%202026-green) ![Tests](https://img.shields.io/badge/tests-passing-brightgreen) ![Python](https://img.shields.io/badge/python-3.10+-blue)
 
 ## What it does
 
@@ -31,7 +31,8 @@ The server edits the .mw XML file directly (never `ET.write` — that corrupts b
 
 ### Prerequisites
 
-- **Maple 2025** installed at `C:\Program Files\Maple 2025`
+- **Maple** installed under `C:\Program Files\Maple <year>`. The newest install is
+  auto-detected; set the `MAPLE` environment variable to pick a specific one
 - **Python 3.10+**
 - **uv** (`pip install uv`)
 
@@ -68,7 +69,8 @@ Add to Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json`):
 }
 ```
 
-Add the Java Agent to `C:\Program Files\Maple 2025\bin.X86_64_WINDOWS\launch.ini`:
+Add the Java Agent to `<MAPLE>\bin.X86_64_WINDOWS\launch.ini` (e.g.
+`C:\Program Files\Maple 2026\bin.X86_64_WINDOWS\launch.ini`):
 
 ```
 java_args=-javaagent:C:/path/to/maple-mcp/reload-agent.jar

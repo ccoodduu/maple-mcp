@@ -1,18 +1,45 @@
 # Maple MCP Server - Installation Script
 # Run: powershell -ExecutionPolicy Bypass -File install.ps1
 
-$MapleRoot = "C:\Program Files\Maple 2025"
 $ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ClaudeConfig = "$env:APPDATA\Claude\claude_desktop_config.json"
 
 Write-Host "=== Maple MCP Server Installation ===" -ForegroundColor Cyan
 
-# 1. Check Maple installation
-if (-not (Test-Path "$MapleRoot\bin.X86_64_WINDOWS\cmaple.exe")) {
-    Write-Host "ERROR: Maple 2025 not found at $MapleRoot" -ForegroundColor Red
-    exit 1
+# 1. Locate Maple. $env:MAPLE wins (same variable the Python side honours);
+#    otherwise take the newest install that actually has a kernel binary, so
+#    this keeps working across Maple upgrades instead of pinning one year.
+if ($env:MAPLE) {
+    $MapleRoot = $env:MAPLE
+    if (-not (Test-Path "$MapleRoot\bin.X86_64_WINDOWS\cmaple.exe")) {
+        Write-Host "ERROR: `$env:MAPLE is set to '$MapleRoot' but there is no" -ForegroundColor Red
+        Write-Host "       bin.X86_64_WINDOWS\cmaple.exe there." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "[OK] Using `$env:MAPLE -> $MapleRoot" -ForegroundColor Green
+} else {
+    $found = Get-ChildItem "C:\Program Files\Maple *" -Directory -ErrorAction SilentlyContinue |
+        Where-Object { Test-Path (Join-Path $_.FullName "bin.X86_64_WINDOWS\cmaple.exe") } |
+        Sort-Object Name -Descending
+    if (-not $found) {
+        Write-Host "ERROR: No Maple installation found under 'C:\Program Files\Maple *'." -ForegroundColor Red
+        Write-Host "       Set `$env:MAPLE to the install root and re-run." -ForegroundColor Red
+        exit 1
+    }
+    $MapleRoot = $found[0].FullName
+    Write-Host "[OK] Maple found: $MapleRoot" -ForegroundColor Green
+    if ($found.Count -gt 1) {
+        $others = ($found | Select-Object -Skip 1 | ForEach-Object { $_.Name }) -join ", "
+        Write-Host "     (also installed: $others - set `$env:MAPLE to pick one)" -ForegroundColor DarkGray
+    }
 }
-Write-Host "[OK] Maple 2025 found" -ForegroundColor Green
+
+# The agent is injected into THIS Maple's JVM, so an upgrade needs install.ps1
+# re-run against the new install.
+$versionFile = Join-Path $MapleRoot "license\version.txt"
+if (Test-Path $versionFile) {
+    Write-Host "     version: $((Get-Content $versionFile -TotalCount 1).Trim())" -ForegroundColor DarkGray
+}
 
 # 2. Check Python
 $python = Get-Command python -ErrorAction SilentlyContinue
