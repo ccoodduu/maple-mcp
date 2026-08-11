@@ -92,7 +92,7 @@ maple-mcp/
 ├── reload-agent.jar           # Java agent for Maple JVM
 ├── maple-export.jar           # Standalone PDF-export launcher (for screenshot_maple)
 ├── java/ReloadAgent.java      # Agent source
-├── java/MapleExport.java      # PDF-export launcher source (build with Maple's javac)
+├── java/MapleExport.java      # PDF-export launcher source (reflective; version-independent)
 ├── pyproject.toml
 └── src/maple_mcp/
     ├── server.py              # MCP tools
@@ -103,12 +103,22 @@ maple-mcp/
     ├── image_decode.py        # Wheeler + Base64 image codec
 ```
 
-Rebuild `maple-export.jar` after editing `MapleExport.java`:
+Rebuild `maple-export.jar` after editing `MapleExport.java`. It resolves Maple's
+export API reflectively, so it needs **no Maple classpath** and one jar serves
+every Maple version:
 ```
-javac -cp "<MAPLE>/java/worksheet.jar" -d _b java/MapleExport.java
+javac -d _b java/MapleExport.java
 jar cfe maple-export.jar MapleExport -C _b MapleExport.class
 ```
 (use Maple's bundled JDK at `<MAPLE>/jre/bin` — it matches Maple's Java 21 runtime).
+
+Check whether a given Maple still exposes the export API — no licence and no
+desktop session needed, since this only resolves classes. First thing to run
+when porting to a new Maple version; on a signature change it lists the
+`*export*` methods it did find:
+```
+java -cp "<MAPLE>/java/*;maple-export.jar" MapleExport --probe
+```
 
 Rebuilding `reload-agent.jar` (after editing `java/ReloadAgent.java`) requires a
 manifest with `Premain-Class`/`Agent-Class`/`Can-Redefine-Classes`, and **Maple must
