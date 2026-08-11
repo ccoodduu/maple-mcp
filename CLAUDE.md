@@ -93,6 +93,9 @@ maple-mcp/
 ├── maple-export.jar           # Standalone PDF-export launcher (for screenshot_maple)
 ├── java/ReloadAgent.java      # Agent source
 ├── java/MapleExport.java      # PDF-export launcher source (reflective; version-independent)
+├── tools/baseline.py          # Golden baseline: record/check the equation pipeline
+├── tests/fixtures/blob_corpus.json   # 200 frozen real Maple blobs (reverse round-trip)
+├── tests/golden/maple-baseline.json  # Recorded per-item baseline
 ├── pyproject.toml
 └── src/maple_mcp/
     ├── server.py              # MCP tools
@@ -136,8 +139,36 @@ line. Manual steps (replace `<PROJECT_DIR>` with this repo's path):
 3. AHK v2 at `<LOCALAPPDATA>\Programs\AutoHotkey\v2\AutoHotkey64.exe`
 4. User runs Maple inside AHK wrapper (`maple-windows.ahk`) - Maple's SunAwtFrame is child of AutoHotkeyGUI
 
+## Porting to a new Maple version
+
+The dangerous failures are the silent ones. A moved Java API or a missing DLL
+throws; the equation decode layer just returns something subtly different, and
+nothing complains. So the port is run as a diff, not as a smoke test.
+
+1. `java -cp "<MAPLE>/java/*;maple-export.jar" MapleExport --probe` — does the
+   export API still exist? No licence or desktop session needed.
+2. `python tools/baseline.py --check` — per-item diff of the equation pipeline
+   against `tests/golden/maple-baseline.json`. Exits non-zero on any regression
+   and names the equations that moved.
+3. `python -m pytest` — the kernel-backed tests unskip once a licence works.
+
+Record the baseline BEFORE switching versions (`--record`), on a licensed
+install. `--record` refuses to store a kernel suite it could not measure rather
+than writing it as all-failing — a baseline of zeros would make the next run
+look like a clean sweep.
+
+`tests/fixtures/blob_corpus.json` is 200 real Maple-authored equation blobs,
+frozen from local .mw files so the reverse round-trip is reproducible on any
+machine. Rebuild only deliberately (`--freeze-corpus`): re-freezing under a new
+Maple would silently redefine what is being compared.
+
 ## Known Issues / Future Work
 
+- `tests/golden/maple-baseline.json` currently holds ONLY the kernel-free `prepare`
+  suite: the Maple 2025 licence expired 01-aug-2026, so `encode`/`reverse` are
+  recorded as unmeasured. Re-run `tools/baseline.py --record` on the first
+  licensed install to complete it — until then there is no "before" side to
+  compare a port against
 - Equation round-trip is lossy: decoded equations (e.g. `∫x²dx`) don't always re-encode to identical XML
 - `_count_section_depth` scans XML linearly - could be slow on very large documents
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax

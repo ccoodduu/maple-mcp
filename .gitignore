@@ -18,6 +18,8 @@ __pycache__/
 *.json
 !pyproject.toml
 !tools/edgecase_corpus.json
+!tests/fixtures/blob_corpus.json
+!tests/golden/maple-baseline.json
 extracted_*
 tmp_*
 ahk_test.ahk

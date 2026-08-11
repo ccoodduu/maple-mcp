@@ -10,8 +10,13 @@ if _maple_bin not in os.environ.get("PATH", ""):
     os.environ["PATH"] = _maple_bin + os.pathsep + os.environ.get("PATH", "")
 
 # Python 3.8+ on Windows requires os.add_dll_directory() for dependent DLL
-# resolution — PATH changes alone are no longer sufficient.
-if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+# resolution — PATH changes alone are no longer sufficient. Guarded on the
+# directory existing: add_dll_directory raises FileNotFoundError, and since
+# document.py imports this module, an unguarded call makes the whole package
+# unimportable whenever MAPLE_ROOT is wrong — e.g. after upgrading Maple, where
+# the actionable "Could not find maplec DLL" error is what should surface.
+if (sys.platform == "win32" and hasattr(os, "add_dll_directory")
+        and os.path.isdir(_maple_bin)):
     os.add_dll_directory(_maple_bin)
 
 
