@@ -115,13 +115,22 @@ jar cfe maple-export.jar MapleExport -C _b MapleExport.class
 ```
 (use Maple's bundled JDK at `<MAPLE>/jre/bin` — it matches Maple's Java 21 runtime).
 
-Check whether a given Maple still exposes the export API — no licence and no
-desktop session needed, since this only resolves classes. First thing to run
-when porting to a new Maple version; on a signature change it lists the
-`*export*` methods it did find:
+`--probe` checks the WHOLE private-API surface the project binds to — this
+launcher's export call plus every `com.maplesoft.*` class `ReloadAgent` reaches
+by reflection (15 members over 12 classes). Needs no licence and no desktop
+session, since it only resolves classes and members, so it is the cheapest first
+check when porting. Exit 0 = all resolved; each failure line says whether the
+class vanished, the arity changed, or only the parameter types differ:
 ```
 java -cp "<MAPLE>/java/*;maple-export.jar" MapleExport --probe
 ```
+It also prints the 13 members it CANNOT check — those resolved off live objects,
+whose class is only known while Maple runs. Cover those by exercising
+save / reload / `run_executable` against a running Maple.
+
+`tests/test_probe_manifest.py` cross-checks the manifest against the Java
+sources in both directions, so a new `Class.forName` cannot silently escape the
+port check and a stale entry cannot fail a port for an API no longer used.
 
 Rebuilding `reload-agent.jar` (after editing `java/ReloadAgent.java`) requires a
 manifest with `Premain-Class`/`Agent-Class`/`Can-Redefine-Classes`, and **Maple must
@@ -145,8 +154,9 @@ The dangerous failures are the silent ones. A moved Java API or a missing DLL
 throws; the equation decode layer just returns something subtly different, and
 nothing complains. So the port is run as a diff, not as a smoke test.
 
-1. `java -cp "<MAPLE>/java/*;maple-export.jar" MapleExport --probe` — does the
-   export API still exist? No licence or desktop session needed.
+1. `java -cp "<MAPLE>/java/*;maple-export.jar" MapleExport --probe` — do all 15
+   required members of Maple's private Java API still exist? No licence or
+   desktop session needed, so run it before installing anything else.
 2. `python tools/baseline.py --check` — per-item diff of the equation pipeline
    against `tests/golden/maple-baseline.json`. Exits non-zero on any regression
    and names the equations that moved.
