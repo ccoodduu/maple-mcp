@@ -59,6 +59,12 @@ public class MapleExport {
         "com.maplesoft.worksheet.controller.file.WmiWorksheetFileLoader"
             + "#loadContents(java.lang.String,boolean,boolean,boolean,boolean,"
             + "com.maplesoft.worksheet.view.WmiWorksheetView)",
+        // --- ReloadAgent: open (create_document) ---------------------------
+        // protected, so the probe resolves it via getDeclaredMethod like the
+        // agent does; a visibility change alone would not break us.
+        "com.maplesoft.worksheet.controller.file.WmiWorksheetFileOpen"
+            + "#loadAFile(java.io.File,com.maplesoft.mathdoc.view.WmiMathDocumentView)",
+        "com.maplesoft.mathdoc.view.WmiMathDocumentView",
         // --- ReloadAgent: evalnew (run_executable) -------------------------
         "com.maplesoft.mathdoc.model.WmiModel#getDocument()",
         "com.maplesoft.mathdoc.model.WmiModelLock#writeLock(com.maplesoft.mathdoc.model.WmiModel,boolean)",
@@ -227,12 +233,24 @@ public class MapleExport {
         } catch (NoSuchMethodException ignored) {
             // fall through
         }
+        // ReloadAgent reaches some members with getDeclaredMethod +
+        // setAccessible (e.g. the protected WmiWorksheetFileOpen.loadAFile), so
+        // a protected member is still a resolvable one — getMethod cannot see it.
+        try {
+            c.getDeclaredMethod(name, args);
+            return "ok";
+        } catch (NoSuchMethodException ignored) {
+            // fall through to arity search
+        }
         // Same name and arity but different parameter types: the call may still
         // work at runtime (ReloadAgent passes some types it discovers live), so
         // report it as a warning rather than a hard miss.
         String byArity = null;
         boolean nameExists = false;
-        for (Method m : c.getMethods()) {
+        java.util.List<Method> candidates = new java.util.ArrayList<>();
+        candidates.addAll(java.util.Arrays.asList(c.getMethods()));
+        candidates.addAll(java.util.Arrays.asList(c.getDeclaredMethods()));
+        for (Method m : candidates) {
             if (!m.getName().equals(name)) {
                 continue;
             }

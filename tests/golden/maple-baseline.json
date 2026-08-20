@@ -1,10 +1,1102 @@
 {
  "counts": {
-  "prepare": 272
+  "encode": 272,
+  "prepare": 272,
+  "reverse": 200
  },
- "kernel_measured": false,
- "maple_version": "Maple 2025.2",
+ "kernel_measured": true,
+ "maple_version": "Maple 2026.1",
  "suites": {
+  "encode": {
+   "((x - 1)*(x + 1))/((x + 1)*(x + 1)) = (x - 1)/(x + 1)": {
+    "blob": "c9254cdbd44a",
+    "ok": true
+   },
+   "(2*v[1])/(v[1]) = ((2*[A][1])/[A][1])^n": {
+    "blob": "ce44f392ed53",
+    "ok": true
+   },
+   "(2, 25)": {
+    "blob": "1d5bab8fc8db",
+    "ok": true
+   },
+   "(a+b)^2": {
+    "blob": "c9ba79587c4b",
+    "ok": true
+   },
+   "(a+b)^2-(a-b)^2": {
+    "blob": "b1020e3892cb",
+    "ok": true
+   },
+   "(a+b)^2-(a-b)^2=((a+b)+(a-b))*((a+b)-(a-b))": {
+    "blob": "2df9c4063422",
+    "ok": true
+   },
+   "(a+b)^2-(a-b)^2=(a^2+2*a*b+b^2)-(a^2-2*a*b+b^2)": {
+    "blob": "e5c1bfe4ad1b",
+    "ok": true
+   },
+   "(a+b)^2-(a-b)^2=4*a*b": {
+    "blob": "7a18459471a1",
+    "ok": true
+   },
+   "(a+b)^2=a^2+2*a*b+b^2": {
+    "blob": "6070b3a7f087",
+    "ok": true
+   },
+   "(a-b)^2": {
+    "blob": "daf7da97c86f",
+    "ok": true
+   },
+   "(a-b)^2=a^2-2*a*b+b^2": {
+    "blob": "3863e04e2d52",
+    "ok": true
+   },
+   "(d*g)/(d*x) = (d*f)/(d*u) * (d*u)/(d*x)": {
+    "blob": "04401e68ff8f",
+    "ok": true
+   },
+   "(v[2])/(v[1]) = ([A][2]/[A][1])^n": {
+    "error": "Error: Error, (in InertForm:-Parse) invalid subscript selector",
+    "ok": false
+   },
+   "(v[2])/(v[1]) = (k*[A][2]^n)/(k*[A][1]^n)": {
+    "error": "Error: Error, (in InertForm:-Parse) invalid subscript selector",
+    "ok": false
+   },
+   "(x + 1)^2 = 0": {
+    "blob": "ef008a2904b2",
+    "ok": true
+   },
+   "(x^2 - 1)/(x^2 + 2*x + 1)": {
+    "blob": "f6296de182db",
+    "ok": true
+   },
+   "(x^2 - 1)/(x^2 + 2*x + 1) = ((x - 1)*(x + 1))/((x + 1)*(x + 1))": {
+    "blob": "c00b9cd729a8",
+    "ok": true
+   },
+   "(x^2 - 1)/(x^2 + 2*x + 1) = (x - 1)/(x + 1)": {
+    "blob": "eabbad2d0236",
+    "ok": true
+   },
+   "0 + 3*8": {
+    "blob": "0be70869a65a",
+    "ok": true
+   },
+   "1/2*3*8^2": {
+    "blob": "e36a2804a559",
+    "ok": true
+   },
+   "16*(2*x^2+1)^3*x": {
+    "blob": "1d27d4af1ecb",
+    "ok": true
+   },
+   "2 = 2^n": {
+    "blob": "38dca3ea96f7",
+    "ok": true
+   },
+   "2*x^2 - 5*x - 3 = 0": {
+    "blob": "7418588768d1",
+    "ok": true
+   },
+   "2*x^2 - 5*x - 3 = 2*(x - 3)*(x + 1/2)": {
+    "blob": "c78d2e330eb8",
+    "ok": true
+   },
+   "24 - 8 + 10 - 1 = 25": {
+    "blob": "46bb78af54c9",
+    "ok": true
+   },
+   "2^1 = 2^n": {
+    "blob": "38dca3ea96f7",
+    "ok": true
+   },
+   "3*8 - 2*4 + 10 - 1": {
+    "blob": "6b8eaac8b2d1",
+    "ok": true
+   },
+   "36 - 8 + 5 = 33": {
+    "blob": "fa1b77a92a46",
+    "ok": true
+   },
+   "9*4 - 8 + 5": {
+    "blob": "c0a946027839",
+    "ok": true
+   },
+   "=(2*a)*(2*b)": {
+    "blob": "8882ec676ad9",
+    "ok": true
+   },
+   "=(a^2-a^2)+(2*a*b+2*a*b)+(b^2-b^2)": {
+    "blob": "14c53d42d6a4",
+    "ok": true
+   },
+   "=0+4*a*b+0": {
+    "blob": "cdf1c8253a29",
+    "ok": true
+   },
+   "=4*a*b": {
+    "blob": "77cb0232e42f",
+    "ok": true
+   },
+   "=a^2+2*a*b+b^2-a^2+2*a*b-b^2": {
+    "blob": "81898edc539a",
+    "ok": true
+   },
+   "A = Int(x^2, x = 0..3) = 9": {
+    "blob": "80552ef8b003",
+    "ok": true
+   },
+   "Delta*T = 80*[[degC]] - 20*[[degC]] = 60*[[degC]]": {
+    "blob": "aaa16ec3157a",
+    "ok": true
+   },
+   "Delta*T = T[slut] - T[start]": {
+    "blob": "86f9ec5f7ee4",
+    "ok": true
+   },
+   "Dm = R \\ {-1}": {
+    "error": "Error: Error, (in InertForm:-Parse) incorrect syntax in parse: `{` unexpected (near 9th character of parsed string)",
+    "ok": false
+   },
+   "Dm = {x in R | x <> -1}": {
+    "error": "Error: Error, (in InertForm:-Parse) incorrect syntax in parse: `|` unexpected (near 14th character of parsed string)",
+    "ok": false
+   },
+   "F(0) = 0^3/3 = 0": {
+    "blob": "0f799e9398d3",
+    "ok": true
+   },
+   "F(3) = 3^3/3 = 27/3 = 9": {
+    "blob": "f485d14c19b0",
+    "ok": true
+   },
+   "F(x) = x^(2+1)/(2+1) = x^3/3": {
+    "blob": "40162569964a",
+    "ok": true
+   },
+   "F(x) = x^3/3": {
+    "blob": "5e98581e988f",
+    "ok": true
+   },
+   "F[opdrift] = 1000*9.82*0.5*[[(kg*m)/s^2]]": {
+    "blob": "c6b15c81ba19",
+    "ok": true
+   },
+   "F[opdrift] = 1000*[[kg/m^3]]*9.82*[[m/s^2]]*0.5*[[m^3]]": {
+    "blob": "b248679a475f",
+    "ok": true
+   },
+   "F[opdrift] = 4.910*[[kN]]": {
+    "blob": "080e359022cf",
+    "ok": true
+   },
+   "F[opdrift] = 4910*[[N]]": {
+    "blob": "0287ea1b9c7a",
+    "ok": true
+   },
+   "F[opdrift] = 500*[[kg]]*9.82*[[m/s^2]]": {
+    "blob": "c8f678e2e421",
+    "ok": true
+   },
+   "F[opdrift] = m[fortrengt]*g": {
+    "blob": "be6cdee7b2a6",
+    "ok": true
+   },
+   "F[opdrift] = rho*g*V": {
+    "blob": "6074b7863431",
+    "ok": true
+   },
+   "F_opdrift := rho*g*V": {
+    "blob": "31338c786c79",
+    "ok": true
+   },
+   "I = (12*[[V]])/(650*[[Omega]]) = 0.01846*[[A]] = 18.46*[[mA]]": {
+    "blob": "930357469602",
+    "ok": true
+   },
+   "I = U/R[samlet]": {
+    "blob": "c4f8dd848b59",
+    "ok": true
+   },
+   "I_strom := 12*Unit('V') / (650*Unit('Omega'))": {
+    "blob": "1da31191cc22",
+    "ok": true
+   },
+   "Int(x^2, x = 0..3)": {
+    "blob": "3d108074ffdf",
+    "ok": true
+   },
+   "Int(x^2, x = 0..3) = 27/3 - 0/3 = 27/3 - 0 = 9": {
+    "blob": "641e866f64e4",
+    "ok": true
+   },
+   "Int(x^2, x = 0..3) = 9": {
+    "blob": "959ed12ff1d4",
+    "ok": true
+   },
+   "Int(x^2, x = 0..3) = F(3) - F(0)": {
+    "blob": "55f7bb4d83aa",
+    "ok": true
+   },
+   "Int(x^2, x = 0..3) = [x^3/3]": {
+    "blob": "0cd0dc2e740a",
+    "ok": true
+   },
+   "Int(x^2, x)": {
+    "blob": "ec7e8fc4153d",
+    "ok": true
+   },
+   "Int(x^n, x) = x^(n+1)/(n+1) + C": {
+    "blob": "0f3d36265a30",
+    "ok": true
+   },
+   "P = (12*[[V]])^2/(650*[[Omega]]) = (144*[[V^2]])/(650*[[Omega]]) = 0.2215*[[W]]": {
+    "blob": "08277dbfbc16",
+    "ok": true
+   },
+   "P = 12*[[V]]*0.01846*[[A]] = 0.2215*[[W]]": {
+    "blob": "a998397b5b83",
+    "ok": true
+   },
+   "P = R[samlet]*I^2": {
+    "blob": "1166d3bf3438",
+    "ok": true
+   },
+   "P = U*I": {
+    "blob": "a3fe56f142ad",
+    "ok": true
+   },
+   "P = U^2/R[samlet]": {
+    "blob": "5c77d29a46c5",
+    "ok": true
+   },
+   "P_effekt := (12*Unit('V'))^2 / (650*Unit('Omega'))": {
+    "blob": "d99a1608962e",
+    "ok": true
+   },
+   "Q = 2 * 4180 * 60 * [[J]]": {
+    "blob": "23aa9ab3ea50",
+    "ok": true
+   },
+   "Q = 501600*[[J]]": {
+    "blob": "2c34287ee0ef",
+    "ok": true
+   },
+   "Q = 501600*[[J]] = 501.6*[[kJ]]": {
+    "blob": "109586b99202",
+    "ok": true
+   },
+   "Q = m*c*Delta*T": {
+    "blob": "584f9e82205c",
+    "ok": true
+   },
+   "Q = m*c*Delta*T = 2*[[kg]] * 4180*[[J/(kg*degC)]] * 60*[[degC]]": {
+    "blob": "6b5ef29ac30a",
+    "ok": true
+   },
+   "Q_kJ := Q/1000": {
+    "blob": "8c661e84d116",
+    "ok": true
+   },
+   "R := 8.314": {
+    "blob": "a2ccd7447779",
+    "ok": true
+   },
+   "R := evalf(20^2*sin(2*Pi/6)/9.82)": {
+    "blob": "8b65c41fd898",
+    "ok": true
+   },
+   "R = ((20*[[m/s]])^2*sin(2*30*[[degrees]]))/(9.82*[[m/s^2]])": {
+    "blob": "5bdfdd5a9505",
+    "ok": true
+   },
+   "R = (400*[[m^2/s^2]]*sin(60*[[degrees]]))/(9.82*[[m/s^2]]) = (400*[[m^2/s^2]]*0.866)/(9.82*[[m/s^2]]) = 35.28*[[m]]": {
+    "blob": "bd66defb07c4",
+    "ok": true
+   },
+   "R = (v[0]^2*sin(2*theta))/g": {
+    "blob": "32927b10ae42",
+    "ok": true
+   },
+   "R = 35.28*[[m]]": {
+    "blob": "7d13b32772d7",
+    "ok": true
+   },
+   "R = 8.314*[[J/(mol*K)]]": {
+    "blob": "ec99fd50bb1f",
+    "ok": true
+   },
+   "R = v[0*x]*t[flight]": {
+    "blob": "be3e09bc7918",
+    "ok": true
+   },
+   "R[1] = 100*[[Omega]]": {
+    "blob": "847eea9d3df7",
+    "ok": true
+   },
+   "R[2] = 220*[[Omega]]": {
+    "blob": "f233f6f8d4e7",
+    "ok": true
+   },
+   "R[3] = 330*[[Omega]]": {
+    "blob": "24b320bbce0f",
+    "ok": true
+   },
+   "R[samlet] = 100*[[Omega]]+220*[[Omega]]+330*[[Omega]] = 650*[[Omega]]": {
+    "blob": "cf15870cf33f",
+    "ok": true
+   },
+   "R[samlet] = R[1]+R[2]+R[3]": {
+    "blob": "b00832fa6fe4",
+    "ok": true
+   },
+   "R^2 = 1 - SSE/SST = 1 - 0.043/20.6475 = 0.99792": {
+    "blob": "4f0f54a674f7",
+    "ok": true
+   },
+   "R^2 = r^2 = 0.99896^2 = 0.99792": {
+    "blob": "7cd6d89a9e0a",
+    "ok": true
+   },
+   "R_samlet := 100*Unit('Omega') + 220*Unit('Omega') + 330*Unit('Omega')": {
+    "blob": "37715748ea5a",
+    "ok": true
+   },
+   "SSE = Sum(e[i]^2,i=1..n) = 0.07^2 + (-0.16)^2 + 0.11^2 + (-0.02)^2 = 0.043": {
+    "blob": "8e83a1b85057",
+    "ok": true
+   },
+   "SST = S[yy] = 20.6475": {
+    "blob": "4ecbf35f8781",
+    "ok": true
+   },
+   "S[xx] = Sum(x[i]^2,i=1..n) - (Sum(x[i],i=1..n))^2/n = 30 - 10^2/4 = 5": {
+    "blob": "25d3d288cadc",
+    "ok": true
+   },
+   "S[xy] = Sum(x[i]*y[i],i=1..n) - Sum(x[i],i=1..n)*Sum(y[i],i=1..n)/n = 60.9 - 10*20.3/4 = 10.15": {
+    "blob": "ab5371af99f0",
+    "ok": true
+   },
+   "S[yy] = Sum(y[i]^2,i=1..n) - (Sum(y[i],i=1..n))^2/n = 123.67 - 20.3^2/4 = 20.6475": {
+    "blob": "5cb3d8587a8d",
+    "ok": true
+   },
+   "Sum(x[i]*y[i],i=1..n) = 2.1+7.8+18.6+32.4 = 60.9": {
+    "blob": "4a26341ca484",
+    "ok": true
+   },
+   "Sum(x[i],i=1..n) = 1+2+3+4 = 10": {
+    "blob": "55bee3cbd8b3",
+    "ok": true
+   },
+   "Sum(x[i]^2,i=1..n) = 1+4+9+16 = 30": {
+    "blob": "77c70b98c660",
+    "ok": true
+   },
+   "Sum(y[i],i=1..n) = 2.1+3.9+6.2+8.1 = 20.3": {
+    "blob": "93c919a25abf",
+    "ok": true
+   },
+   "Sum(y[i]^2,i=1..n) = 4.41+15.21+38.44+65.61 = 123.67": {
+    "blob": "43719e4f02f1",
+    "ok": true
+   },
+   "T := 300": {
+    "blob": "1440ce4903b9",
+    "ok": true
+   },
+   "T = (5/4, -49/8)": {
+    "blob": "bafc0254046a",
+    "ok": true
+   },
+   "T = 300*[[K]]": {
+    "blob": "6657191e46b6",
+    "ok": true
+   },
+   "T[slut] = 80*[[degC]]": {
+    "blob": "51e4410b87f8",
+    "ok": true
+   },
+   "T[start] = 20*[[degC]]": {
+    "blob": "d6b0f3fda083",
+    "ok": true
+   },
+   "U = 12*[[V]]": {
+    "blob": "5ff1a778f441",
+    "ok": true
+   },
+   "U[1] = R[1]*I = 100*[[Omega]]*0.01846*[[A]] = 1.846*[[V]]": {
+    "blob": "bd7a7ce82b6f",
+    "ok": true
+   },
+   "U[1]+U[2]+U[3] = 1.846*[[V]]+4.062*[[V]]+6.092*[[V]] = 12*[[V]] = U": {
+    "blob": "5fae6c707e94",
+    "ok": true
+   },
+   "U[2] = R[2]*I = 220*[[Omega]]*0.01846*[[A]] = 4.062*[[V]]": {
+    "blob": "23f0f0a68b04",
+    "ok": true
+   },
+   "U[3] = R[3]*I = 330*[[Omega]]*0.01846*[[A]] = 6.092*[[V]]": {
+    "blob": "2e6074270541",
+    "ok": true
+   },
+   "V := 0.05": {
+    "blob": "d6b4b15e5e1e",
+    "ok": true
+   },
+   "V := 0.5*Unit('m^3')": {
+    "blob": "42b5320d515a",
+    "ok": true
+   },
+   "V = 0.05*[[m^3]]": {
+    "blob": "391356c729e9",
+    "ok": true
+   },
+   "V = 0.5*[[m^3]]": {
+    "blob": "d5f494f1a0d0",
+    "ok": true
+   },
+   "[A] = [[mol/L]]": {
+    "blob": "f4c24da33832",
+    "ok": true
+   },
+   "[A][2] = 2*[A][1]": {
+    "error": "Error: Error, (in InertForm:-Parse) invalid subscript selector",
+    "ok": false
+   },
+   "[[J/m^3]] = [[Pa]]": {
+    "blob": "3647135fb0cc",
+    "ok": true
+   },
+   "[[kg/m^3]]*[[m/s^2]]*[[m^3]] = [[(kg*m)/s^2]] = [[N]]": {
+    "blob": "5fd111f6d8b4",
+    "ok": true
+   },
+   "[k] = [v]/[A] = ([mol/(L*s)])/([mol/L]) = [1/s]": {
+    "blob": "fcb2f1f3374c",
+    "ok": true
+   },
+   "[v] = [[mol/(L*s)]]": {
+    "blob": "a263a49626eb",
+    "ok": true
+   },
+   "a = (4*60.9 - 10*20.3)/(4*30 - 10^2) = (243.6 - 203)/(120 - 100) = 40.6/20 = 2.03": {
+    "blob": "fa77713961e5",
+    "ok": true
+   },
+   "a = (n*Sum(x[i]*y[i],i=1..n) - Sum(x[i],i=1..n)*Sum(y[i],i=1..n))/(n*Sum(x[i]^2,i=1..n) - (Sum(x[i],i=1..n))^2)": {
+    "blob": "727da4b11863",
+    "ok": true
+   },
+   "a = 2": {
+    "blob": "e15acf5e573c",
+    "ok": true
+   },
+   "a = 3*[[m/s^2]]": {
+    "blob": "24de004efb12",
+    "ok": true
+   },
+   "b = (20.3 - 2.03*10)/4 = (20.3 - 20.3)/4 = 0": {
+    "blob": "18f727448ef6",
+    "ok": true
+   },
+   "b = (Sum(y[i],i=1..n) - a*Sum(x[i],i=1..n))/n": {
+    "blob": "bc76019f91e0",
+    "ok": true
+   },
+   "b = -5": {
+    "blob": "81684b801bf6",
+    "ok": true
+   },
+   "c = -3": {
+    "blob": "6632c09b2704",
+    "ok": true
+   },
+   "c = 4180*[[J/(kg*degC)]]": {
+    "blob": "bb9167be095a",
+    "ok": true
+   },
+   "d = (-5)^2 - 4*2*(-3)": {
+    "blob": "3cb62e8f17c0",
+    "ok": true
+   },
+   "d = 25 + 24 = 49": {
+    "blob": "df3cc33a4eb0",
+    "ok": true
+   },
+   "d = 25 - (-24)": {
+    "blob": "f2ba924a1e6a",
+    "ok": true
+   },
+   "d = b^2 - 4*a*c": {
+    "blob": "75e12419cb47",
+    "ok": true
+   },
+   "d > 0": {
+    "blob": "07c8d2baf5b1",
+    "ok": true
+   },
+   "d/dx(x^n) = n*x^(n-1)": {
+    "blob": "a8f3fad6ed7a",
+    "ok": true
+   },
+   "diff((2*x^2 + 1)^4, x)": {
+    "blob": "8a2f25890cf0",
+    "ok": true
+   },
+   "diff(3*x^3 - 2*x^2 + 5*x - 1, x)": {
+    "blob": "b4f72deb8db5",
+    "ok": true
+   },
+   "diff(x^3/3, x) = 3*x^2/3 = x^2": {
+    "blob": "5e15343d194e",
+    "ok": true
+   },
+   "e[1] = 2.1 - 2.03 = 0.07; e[2] = 3.9 - 4.06 = -0.16; e[3] = 6.2 - 6.09 = 0.11; e[4] = 8.1 - 8.12 = -0.02": {
+    "blob": "f7be4fe10763",
+    "ok": true
+   },
+   "e[i] = y[i] - yhat[i]": {
+    "blob": "e69a3c445e0a",
+    "ok": true
+   },
+   "eval(3*x^3 - 2*x^2 + 5*x - 1, x = 2)": {
+    "blob": "c446223573ac",
+    "ok": true
+   },
+   "eval(9*x^2 - 4*x + 5, x = 2)": {
+    "blob": "1e0df4581ad6",
+    "ok": true
+   },
+   "expand((a+b)^2-(a-b)^2)": {
+    "blob": "51b375ba5b60",
+    "ok": true
+   },
+   "f'(2) = 9*2^2 - 4*2 + 5": {
+    "blob": "876ad7ff755a",
+    "ok": true
+   },
+   "f'(u) = 4*u^3": {
+    "blob": "df8537a8ce6d",
+    "ok": true
+   },
+   "f'(x) = 3*3*x^2 - 2*2*x + 5": {
+    "blob": "c718dfd65e77",
+    "ok": true
+   },
+   "f'(x) = 9*x^2 - 4*x + 5": {
+    "blob": "c752f364f751",
+    "ok": true
+   },
+   "f(2) = 3*2^3 - 2*2^2 + 5*2 - 1": {
+    "blob": "75129d95f955",
+    "ok": true
+   },
+   "f(5/4) = 2*(25/16) - 25/4 - 3 = 25/8 - 25/4 - 3 = -49/8": {
+    "blob": "a6b8c07ae4b1",
+    "ok": true
+   },
+   "f(5/4) = 2*(5/4)^2 - 5*(5/4) - 3": {
+    "blob": "0d164860ff50",
+    "ok": true
+   },
+   "f(u) = u^4": {
+    "blob": "905084647a6c",
+    "ok": true
+   },
+   "f(x) = 2*x^2 - 5*x - 3": {
+    "blob": "889c5d9495c7",
+    "ok": true
+   },
+   "f(x) = 3*x^3 - 2*x^2 + 5*x - 1": {
+    "blob": "bb0bd66e8105",
+    "ok": true
+   },
+   "f(x) = x^2": {
+    "blob": "69a685c5bf84",
+    "ok": true
+   },
+   "factor((x^2 - 1)/(x^2 + 2*x + 1))": {
+    "blob": "0c87f89efef5",
+    "ok": true
+   },
+   "g := 9.82*Unit('m/s^2')": {
+    "blob": "212f2d0470e7",
+    "ok": true
+   },
+   "g = 9.82*[[m/s^2]]": {
+    "blob": "8b6a6b3f081f",
+    "ok": true
+   },
+   "g'(1) = 16*1*(2*1^2 + 1)^3 = 16*27 = 432": {
+    "blob": "d69077273c52",
+    "ok": true
+   },
+   "g'(x) = 16*x*(2*x^2 + 1)^3": {
+    "blob": "fc2d483f18ed",
+    "ok": true
+   },
+   "g'(x) = 4*(2*x^2 + 1)^3 * 4*x": {
+    "blob": "8f3c7b9ca914",
+    "ok": true
+   },
+   "g'(x) = 4*u^3 * 4*x": {
+    "blob": "6bad6e76d452",
+    "ok": true
+   },
+   "g'(x) = f'(u(x)) * u'(x)": {
+    "blob": "0f5ed3369616",
+    "ok": true
+   },
+   "g(x) = (2*x^2 + 1)^4": {
+    "blob": "a243c243466a",
+    "ok": true
+   },
+   "g(x) = f(u(x))": {
+    "blob": "4b2b6f6a0976",
+    "ok": true
+   },
+   "h := evalf(20^2*sin(Pi/6)^2/(2*9.82))": {
+    "blob": "8567c83e6685",
+    "ok": true
+   },
+   "h = ((20*[[m/s]])^2*sin(30*[[degrees]])^2)/(2*9.82*[[m/s^2]])": {
+    "blob": "f5b874f03f62",
+    "ok": true
+   },
+   "h = (400*[[m^2/s^2]]*0.25)/(19.64*[[m/s^2]]) = 5.09*[[m]]": {
+    "blob": "b8176a122474",
+    "ok": true
+   },
+   "h = (v[0]^2*sin(theta)^2)/(2*g)": {
+    "blob": "b677302f1ef5",
+    "ok": true
+   },
+   "h = 5.09*[[m]]": {
+    "blob": "d003052e05b2",
+    "ok": true
+   },
+   "h = v[0*y]*t[top] - (1/2)*g*t[top]^2": {
+    "blob": "8bc3b2187db3",
+    "ok": true
+   },
+   "int(x^2, x = 0..3)": {
+    "blob": "3d108074ffdf",
+    "ok": true
+   },
+   "k = [[1/s]]": {
+    "blob": "33248d30ce62",
+    "ok": true
+   },
+   "ln(2) = n*ln(2)": {
+    "blob": "55bc0c9a6ad9",
+    "ok": true
+   },
+   "m := 2; c := 4180; T_start := 20; T_slut := 80; DeltaT := T_slut - T_start; Q := m*c*DeltaT": {
+    "blob": "0c7537102ea8",
+    "ok": true
+   },
+   "m = 2*[[kg]]": {
+    "blob": "3efa7acd2359",
+    "ok": true
+   },
+   "m[fortrengt] = 1000*[[kg/m^3]]*0.5*[[m^3]]": {
+    "blob": "297ba354f753",
+    "ok": true
+   },
+   "m[fortrengt] = 500*[[kg]]": {
+    "blob": "9e3f3fe60dc0",
+    "ok": true
+   },
+   "m[fortrengt] = rho*V": {
+    "blob": "6352d2576aa5",
+    "ok": true
+   },
+   "n := 2": {
+    "blob": "c9d87a494f11",
+    "ok": true
+   },
+   "n := log[2](2)": {
+    "blob": "d09ebf2e7f1d",
+    "ok": true
+   },
+   "n = 1": {
+    "blob": "b060327b0ea8",
+    "ok": true
+   },
+   "n = 2*[[mol]]": {
+    "blob": "6d48cd0db9d7",
+    "ok": true
+   },
+   "n = 4": {
+    "blob": "94c9c7411b74",
+    "ok": true
+   },
+   "n = ln(2)/ln(2) = 1": {
+    "blob": "3f6aaa694a4e",
+    "ok": true
+   },
+   "n*R*T = 2*8.314*300*[[J]]": {
+    "blob": "441b4c232136",
+    "ok": true
+   },
+   "n*R*T = 4988.4*[[J]]": {
+    "blob": "2142a163be44",
+    "ok": true
+   },
+   "normal((x^2 - 1)/(x^2 + 2*x + 1))": {
+    "blob": "13fa7b46252c",
+    "ok": true
+   },
+   "p := n*R*T/V": {
+    "blob": "48668da4b3bf",
+    "ok": true
+   },
+   "p = (2*[[mol]]*8.314*[[J/(mol*K)]]*300*[[K]])/(0.05*[[m^3]])": {
+    "blob": "3712eacaecdb",
+    "ok": true
+   },
+   "p = (4988.4*[[J]])/(0.05*[[m^3]])": {
+    "blob": "d6d7b8c30798",
+    "ok": true
+   },
+   "p = (n*R*T)/(V)": {
+    "blob": "7132d2302c0a",
+    "ok": true
+   },
+   "p = 9.9768e4*[[Pa]] = 0.998*[[bar]]": {
+    "blob": "ad6ef0e79232",
+    "ok": true
+   },
+   "p = 99.768*[[kPa]]": {
+    "blob": "0744a3529f08",
+    "ok": true
+   },
+   "p = 99768*[[Pa]]": {
+    "blob": "bdc9a9d94815",
+    "ok": true
+   },
+   "p*V = n*R*T": {
+    "blob": "730235c0be4b",
+    "ok": true
+   },
+   "p_kPa := p/1000": {
+    "blob": "b4ec0fda4ba3",
+    "ok": true
+   },
+   "r = S[xy]/sqrt(S[xx]*S[yy]) = 10.15/sqrt(5*20.6475) = 0.99896": {
+    "blob": "c90c43f00654",
+    "ok": true
+   },
+   "rho := 1000*Unit('kg/m^3')": {
+    "blob": "8c3a32e5a71c",
+    "ok": true
+   },
+   "rho = 1000*[[kg/m^3]]": {
+    "blob": "b2eae11f96ef",
+    "ok": true
+   },
+   "s = ((24*[[m/s]])^2-0)/(2*3*[[m/s^2]])": {
+    "blob": "da72d886bcbd",
+    "ok": true
+   },
+   "s = (1)/(2)*3*64*[[m]]": {
+    "blob": "91b9ee349219",
+    "ok": true
+   },
+   "s = (1)/(2)*3*[[m/s^2]]*(8*[[s]])^2": {
+    "blob": "944f040b8d6a",
+    "ok": true
+   },
+   "s = (1)/(2)*a*t^2": {
+    "blob": "685ba0f4b6fe",
+    "ok": true
+   },
+   "s = (576)/(6)*[[m]]": {
+    "blob": "0885da7e5c3f",
+    "ok": true
+   },
+   "s = (v^2-v[0]^2)/(2*a)": {
+    "blob": "16f6df75fcc6",
+    "ok": true
+   },
+   "s = 96*[[m]]": {
+    "blob": "c2f317286a46",
+    "ok": true
+   },
+   "s = v[0]*t+(1)/(2)*a*t^2": {
+    "blob": "9a04bb2e0036",
+    "ok": true
+   },
+   "simplify((a+b)^2-(a-b)^2)": {
+    "blob": "b4d97fd8981d",
+    "ok": true
+   },
+   "simplify(convert(F_opdrift, units, N))": {
+    "blob": "75faaae59695",
+    "ok": true
+   },
+   "solve(2*x^2 - 5*x - 3 = 0, x)": {
+    "blob": "80391e83295f",
+    "ok": true
+   },
+   "solve(x^2 + 2*x + 1 = 0, x)": {
+    "blob": "1889cbdd992b",
+    "ok": true
+   },
+   "sqrt(49) = 7": {
+    "blob": "e99f556d32e2",
+    "ok": true
+   },
+   "t = 8*[[s]]": {
+    "blob": "bacfdd6167a6",
+    "ok": true
+   },
+   "t[flight] = (2*10.0*[[m/s]])/(9.82*[[m/s^2]]) = 2.04*[[s]]": {
+    "blob": "294c910a72ec",
+    "ok": true
+   },
+   "t[flight] = 2*t[top] = (2*v[0*y])/g": {
+    "blob": "80a2c63f6b2d",
+    "ok": true
+   },
+   "t[top] = v[0*y]/g = (10.0*[[m/s]])/(9.82*[[m/s^2]]) = 1.02*[[s]]": {
+    "blob": "af636b3d1068",
+    "ok": true
+   },
+   "theta = 30*[[degrees]]": {
+    "blob": "fa4f68060dd8",
+    "ok": true
+   },
+   "u = u(x) = 2*x^2 + 1": {
+    "blob": "9632acfe526e",
+    "ok": true
+   },
+   "u'(x) = 4*x": {
+    "blob": "f99af9af9ebd",
+    "ok": true
+   },
+   "v = 0*[[m/s]]+3*[[m/s^2]]*8*[[s]]": {
+    "blob": "144a53c3589e",
+    "ok": true
+   },
+   "v = 24*[[m/s]]": {
+    "blob": "44d727fcaa9c",
+    "ok": true
+   },
+   "v = 24*[[m/s]] = 86.4*[[km/h]]": {
+    "blob": "10e5bf8ff792",
+    "ok": true
+   },
+   "v = 3*8*[[m/s]]": {
+    "blob": "6c3ec0b27ef8",
+    "ok": true
+   },
+   "v = k*[A]": {
+    "blob": "fa70ec80999f",
+    "ok": true
+   },
+   "v = k*[A]^1": {
+    "blob": "fa70ec80999f",
+    "ok": true
+   },
+   "v = k*[A]^n": {
+    "blob": "e1df08ae10e7",
+    "ok": true
+   },
+   "v = v[0]+a*t": {
+    "blob": "1dc3e18621d6",
+    "ok": true
+   },
+   "v[0*x] = 20*[[m/s]]*cos(30*[[degrees]]) = 17.32*[[m/s]]": {
+    "blob": "07939a0a4947",
+    "ok": true
+   },
+   "v[0*x] = v[0]*cos(theta)": {
+    "blob": "09686420617e",
+    "ok": true
+   },
+   "v[0*y] - g*t[top] = 0": {
+    "blob": "205c1a85568c",
+    "ok": true
+   },
+   "v[0*y] = 20*[[m/s]]*sin(30*[[degrees]]) = 10.0*[[m/s]]": {
+    "blob": "b0dd5b751dab",
+    "ok": true
+   },
+   "v[0*y] = v[0]*sin(theta)": {
+    "blob": "deea7c35f7ce",
+    "ok": true
+   },
+   "v[0] = 0*[[m/s]]": {
+    "blob": "2ff5bfc0a21f",
+    "ok": true
+   },
+   "v[0] = 20*[[m/s]]": {
+    "blob": "aba9c6e346ea",
+    "ok": true
+   },
+   "v[1] = k*[A][1]^n": {
+    "blob": "6318b718849a",
+    "ok": true
+   },
+   "v[2] = 2*v[1]": {
+    "blob": "ee8745e2cb4d",
+    "ok": true
+   },
+   "v[2] = k*[A][2]^n": {
+    "error": "Error: Error, (in InertForm:-Parse) invalid subscript selector",
+    "ok": false
+   },
+   "v[y](t) = v[0*y] - g*t": {
+    "blob": "afa706345cfc",
+    "ok": true
+   },
+   "x + 1 = 0": {
+    "blob": "663a2ba085d2",
+    "ok": true
+   },
+   "x = (-(-5) + sqrt(49))/(2*2)": {
+    "blob": "c192749e845d",
+    "ok": true
+   },
+   "x = (-2 +- sqrt(0))/2 = -1": {
+    "blob": "7e512bd89746",
+    "ok": true
+   },
+   "x = (-2 +- sqrt(2^2 - 4*1*1))/(2*1)": {
+    "blob": "6016d17281c3",
+    "ok": true
+   },
+   "x = (-b + sqrt(d))/(2*a)": {
+    "blob": "473ca4ae3c1f",
+    "ok": true
+   },
+   "x = (-b +- sqrt(b^2 - 4*a*c))/(2*a)": {
+    "blob": "a35ff3fb8cc7",
+    "ok": true
+   },
+   "x = (-b - sqrt(d))/(2*a)": {
+    "blob": "7993157f2a9e",
+    "ok": true
+   },
+   "x = (5 + 7)/4": {
+    "blob": "89369489870a",
+    "ok": true
+   },
+   "x = -1": {
+    "blob": "fe7361fe48b9",
+    "ok": true
+   },
+   "x(t) = v[0*x]*t": {
+    "blob": "b6ce60eaf38c",
+    "ok": true
+   },
+   "x[1] = (5 + 7)/4 = 12/4 = 3": {
+    "blob": "19047187866f",
+    "ok": true
+   },
+   "x[2] = (5 - 7)/4 = -2/4 = -1/2": {
+    "blob": "a6a6eb753601",
+    "ok": true
+   },
+   "x[top] = -(-5)/(2*2) = 5/4": {
+    "blob": "70d4903ea14f",
+    "ok": true
+   },
+   "x[top] = -b/(2*a)": {
+    "blob": "817bac088c71",
+    "ok": true
+   },
+   "x^2 + 2*x + 1 = (x + 1)*(x + 1)": {
+    "blob": "21de9901d057",
+    "ok": true
+   },
+   "x^2 + 2*x + 1 = (x + 1)^2": {
+    "blob": "e2db3ed4492f",
+    "ok": true
+   },
+   "x^2 + 2*x + 1 = 0": {
+    "blob": "c58adc05b5f2",
+    "ok": true
+   },
+   "x^2 - 1 = (x - 1)*(x + 1)": {
+    "blob": "fb6e7356f0c9",
+    "ok": true
+   },
+   "x^2 >= 0": {
+    "blob": "272aa17a2105",
+    "ok": true
+   },
+   "x^2-y^2=(x+y)*(x-y)": {
+    "blob": "aa70db268460",
+    "ok": true
+   },
+   "xs := [1,2,3,4]; ys := [2.1,3.9,6.2,8.1]; n := 4; Sx := add(xs); Sy := add(ys); Sxx := add(x^2, x in xs); Sxy := add(xs[i]*ys[i], i=1..n); a := (n*Sxy - Sx*Sy)/(n*Sxx - Sx^2); b := (Sy - a*Sx)/n": {
+    "blob": "810b16c51cbb",
+    "ok": true
+   },
+   "y = 2.03*x": {
+    "blob": "cf7d0e6e33c6",
+    "ok": true
+   },
+   "y = 2.03*x + 0": {
+    "blob": "04517cc0ff84",
+    "ok": true
+   },
+   "y = 33*(x-2) + 25": {
+    "blob": "4dfc7f91e76d",
+    "ok": true
+   },
+   "y = 33*x - 41": {
+    "blob": "da586d5dc742",
+    "ok": true
+   },
+   "y = 33*x - 66 + 25": {
+    "blob": "28890c8d8cf8",
+    "ok": true
+   },
+   "y = f'(a)*(x-a) + f(a)": {
+    "blob": "e30a0bfe78ab",
+    "ok": true
+   },
+   "y(t) = v[0*y]*t - (1/2)*g*t^2": {
+    "blob": "936fa1dc6988",
+    "ok": true
+   },
+   "y[top] = -49/(4*2) = -49/8": {
+    "blob": "763de3006afe",
+    "ok": true
+   },
+   "y[top] = -d/(4*a)": {
+    "blob": "c01f38d15e8d",
+    "ok": true
+   },
+   "yhat[1] = 2.03*1 = 2.03": {
+    "blob": "d3da45f2f57f",
+    "ok": true
+   },
+   "yhat[2] = 2.03*2 = 4.06": {
+    "blob": "74f385009546",
+    "ok": true
+   },
+   "yhat[3] = 2.03*3 = 6.09": {
+    "blob": "f050ad3e3735",
+    "ok": true
+   },
+   "yhat[4] = 2.03*4 = 8.12": {
+    "blob": "1956508905da",
+    "ok": true
+   },
+   "yhat[i] = 2.03*x[i]": {
+    "blob": "5eb694caf609",
+    "ok": true
+   }
+  },
   "prepare": {
    "((x - 1)*(x + 1))/((x + 1)*(x + 1)) = (x - 1)/(x + 1)": {
     "out": "((x - 1)*(x + 1))/((x + 1)*(x + 1)) = (x - 1)/(x + 1)"
@@ -822,10 +1914,808 @@
    "yhat[i] = 2.03*x[i]": {
     "out": "yhat[i] = 2.03*x[i]"
    }
+  },
+  "reverse": {
+   "032533ad26b4": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "y=0"
+   },
+   "036e0e386fec": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "m=(F)/(g)"
+   },
+   "048c655e0095": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "100*[[°C]]"
+   },
+   "062b8558501e": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "y(x)=-(g)/(2 v02cos^2α)*x^2+tan α*x+y_0"
+   },
+   "07eb88aa190a": {
+    "bucket": "DRIFTED",
+    "decoded": "s_1(t):=-1*t:"
+   },
+   "09f2e15e5c7c": {
+    "bucket": "DRIFTED",
+    "decoded": "sin(α)=μ*cos(α)"
+   },
+   "0c42662e28b1": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "0= 1.15 x_1+0.35⇔x_1=-(0.35)/(1.15)"
+   },
+   "0c9c7464bfac": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "(9 x+8)/(7)=5"
+   },
+   "0ed2187bbf5a": {
+    "bucket": "DRIFTED",
+    "decoded": "n_væske=?"
+   },
+   "0f5ed3369616": {
+    "bucket": "BYTE_IDENTICAL",
+    "decoded": "g'(x)=f'(u(x))*u'(x)"
+   },
+   "1055181d11b7": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "A_front=25.95"
+   },
+   "10b562c57132": {
+    "bucket": "DRIFTED",
+    "decoded": "x_total=2[[N]]+2[[N]]"
+   },
+   "11ea514535d6": {
+    "bucket": "DRIFTED",
+    "decoded": "C_vand=4180 [[(J)/(kg*°C)]]*2.5[[kg]]"
+   },
+   "149c407f7e8e": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "y=6"
+   },
+   "164232b927c0": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "f(x)=2 x+1"
+   },
+   "16e71b791959": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "(0;4)"
+   },
+   "1cfda6a344b3": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "N=300"
+   },
+   "1d1c6a0493fb": {
+    "bucket": "DRIFTED",
+    "decoded": "Sum = r_1^2+r_2^2+r_3^2+r_4^2+r_5^2"
+   },
+   "1e095304477c": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "x=k"
+   },
+   "1fbcffe6964b": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "f′(x)=-2 x-3"
+   },
+   "21f123591f77": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "M(t)=32598*1.0589^t"
+   },
+   "22072505745d": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "max(Z)"
+   },
+   "243a7f624ad5": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "t_R*v_0=s_0"
+   },
+   "25176e0b0049": {
+    "bucket": "DRIFTED",
+    "decoded": "(AE)=7-sqrt(11.)"
+   },
+   "257fe5e55c29": {
+    "bucket": "DRIFTED",
+    "decoded": "-6[[(m)/(s^2)]]"
+   },
+   "25ec8186ef4b": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "A'(x)=q(x)*r'(x)+r(x)*q'(x)"
+   },
+   "2683e1fbe254": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "sqrt(3.)"
+   },
+   "27bd86b6878f": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "d=0.9^2-4*(-1.1)*1.5"
+   },
+   "291d22de33b5": {
+    "bucket": "DRIFTED",
+    "decoded": "t=(515428.5715 [[J]])/(1600[[W]])"
+   },
+   "2b38d30d841f": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "b^2=r^2-464.33785225"
+   },
+   "2c4af22c5411": {
+    "bucket": "DRIFTED",
+    "decoded": "(CB→) =sqrt((-2.50)^2+(-1.50)^2)"
+   },
+   "2cfb96762e6b": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "n(2012)"
+   },
+   "31142b4613d5": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "2011"
+   },
+   "31167dee433d": {
+    "bucket": "DRIFTED",
+    "decoded": "Tid:=(0.5,1,2,3,4,5):"
+   },
+   "317b89d7e4f6": {
+    "bucket": "DRIFTED",
+    "decoded": "s=5[[s]]*10[[(m)/(s)]]*(1)/(2)"
+   },
+   "328be40258a1": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "f(x):=(1x<=-2x+3-2<x<=-1x^2+2-1<x<=1-x+51<x<=4):"
+   },
+   "329400889283": {
+    "bucket": "DRIFTED",
+    "decoded": "(4+sqrt(3))^2-6 *(4+sqrt(3))+5"
+   },
+   "348188d2067c": {
+    "bucket": "DRIFTED",
+    "decoded": "t_=(0.0272[[(Ω*mm^2)/(m)]]*20[[m]])/(0.2185463659*[[Ω]]*280 [[mm]])"
+   },
+   "35fd4888dceb": {
+    "bucket": "DRIFTED",
+    "decoded": "c_glas=(3*10^8[[(m)/(s)]])/(1.5)"
+   },
+   "3784276e7dad": {
+    "bucket": "DRIFTED",
+    "decoded": "Q_=c*m*ΔT"
+   },
+   "3c021c847036": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "c=j'(3)"
+   },
+   "3f9a1e300a93": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "E_kin=(1)/(2)*m*v^2"
+   },
+   "408adf014761": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "t_R*v_0<s_0"
+   },
+   "408ff90ecc1f": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "K(x):=3 x-6:"
+   },
+   "40a674555de6": {
+    "bucket": "DRIFTED",
+    "decoded": "v=(arcCos(x_1*x_2+y_1*y_2))/((a→)*(b→))"
+   },
+   "40adfa82acf8": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "α_0=0.0048*(°C)^-1"
+   },
+   "413451516057": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "D_ballon=(210.[[cm]])/(230 pixels)*90pixels"
+   },
+   "42ddfd03a4d3": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "7"
+   },
+   "439a1a8b25e5": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "O"
+   },
+   "43af9ddce1b8": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "m_kork=(3)/(5000)*[[kg]]"
+   },
+   "448436e8e2ec": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "v^2=v02+2*a*s"
+   },
+   "45133dbdf222": {
+    "bucket": "BYTE_IDENTICAL",
+    "decoded": "h-r=107"
+   },
+   "4604ab03317f": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "y=g'(x_0)*(x-x_0)+g(x_0)"
+   },
+   "485cdd612813": {
+    "bucket": "DRIFTED",
+    "decoded": "solve( { 9*Unit('V') = 60*R*Unit('mA') } )"
+   },
+   "489deb665ca7": {
+    "bucket": "DRIFTED",
+    "decoded": "0.3639702343=-(x_1-0)/(y_1-(-7.45))"
+   },
+   "48a226b909f5": {
+    "bucket": "DRIFTED",
+    "decoded": "28.18*L=(ρ*L)/(A)"
+   },
+   "4a1a7b9376fe": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "b=(5)/(sqrt(5))"
+   },
+   "4a57fe095869": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "x_2"
+   },
+   "4aed09c6d75a": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "A'(x)=0"
+   },
+   "4ba0f3562889": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "P=(E)/(t)"
+   },
+   "4c48afd44fb3": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "f_2(x)"
+   },
+   "4d31364465d5": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "f'(x)=0.2 x"
+   },
+   "4e0625f7f855": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "5 x+3 y=4"
+   },
+   "4e721faf0ec4": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": ","
+   },
+   "4ffecc1c42f4": {
+    "bucket": "DECODE_BAD",
+    "decoded": "[]"
+   },
+   "52cb4bdbbda3": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "h=0.2+6.4"
+   },
+   "53a4d4266bf4": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "f(5)"
+   },
+   "53db07849135": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "x=6"
+   },
+   "561b0861aaa0": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "g'(t)=-0.0009504515360"
+   },
+   "58953a9a648e": {
+    "bucket": "DRIFTED",
+    "decoded": "φ=200 [[( W)/(m^2)]]"
+   },
+   "58b53b9bcaa5": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "s=(617.57)/(90.86)"
+   },
+   "5a20957ed155": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "b=6+6"
+   },
+   "5aeb93a3fd89": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "h=6.626*10^-34*[[J*s]]"
+   },
+   "5e11fcdfc23d": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "with(Gym):"
+   },
+   "609584fea840": {
+    "bucket": "DRIFTED",
+    "decoded": "ΔT=100 [[°C]]-20[[°C]]"
+   },
+   "61045c333357": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "evalf[5]( #\"\"(\"\"' )"
+   },
+   "632db72e5ab1": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "evalf[5]( ,$I#PiG%*protectedG#\"\"%\"\"$ )"
+   },
+   "66c379cf4a98": {
+    "bucket": "DRIFTED",
+    "decoded": "3.30 [[m]]*8.50[[m]]*18.30 [[m]]"
+   },
+   "66dfe869b494": {
+    "bucket": "DRIFTED",
+    "decoded": "r(x)=3*(-x^2+40000)^(1)/(2)"
+   },
+   "6b228a550778": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "Variance(Z)"
+   },
+   "6d06ac6ccd7d": {
+    "bucket": "DRIFTED",
+    "decoded": "R_t=529 [[Ω]]"
+   },
+   "6dc858ccc56b": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "F_ryster=F_samlet-F_t"
+   },
+   "6ff576dc5654": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "((DE))/(|AB|)"
+   },
+   "6ffe09d5bce4": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "fsolve( /I\"VG6\",$*$KI%UnitG6$/I+modulenameG6\"I&UnitsG6$I(_syslibG6\"%*protectedG%*protectedG6#I\"mG6$QKC:\\Program~Files\\Ma"
+   },
+   "731f778a63e8": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "R_p2=((1)/(1.2 [[Ω]])+(1)/(13[[Ω]]))^-1"
+   },
+   "7427f4ad9d01": {
+    "bucket": "DRIFTED",
+    "decoded": "Q=125 [[kJ]]"
+   },
+   "75894a3f4228": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "f(x)"
+   },
+   "75d688e2f6f6": {
+    "bucket": "DRIFTED",
+    "decoded": "≈1.379[[(Ω*mm^2)/(m)]]"
+   },
+   "76605ecb381c": {
+    "bucket": "DRIFTED",
+    "decoded": "(x,y)=(x,f(x))"
+   },
+   "78376670db75": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "x=(2 ±4)/(2)"
+   },
+   "78bee79eda45": {
+    "bucket": "DRIFTED",
+    "decoded": "Q_total=123.7280*[[kJ]]+4377.8400 [[J]]+55058.96*[[J]]"
+   },
+   "7a98b5b10704": {
+    "bucket": "DRIFTED",
+    "decoded": "P=100[[W]]"
+   },
+   "7b156360d606": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "(50-sqrt(r^2-464.33785225))(50-sqrt(r^2-464.33785225))=r^2"
+   },
+   "7cf5adad5e68": {
+    "bucket": "DRIFTED",
+    "decoded": "f(t)=a*sin(ω*t+φ)"
+   },
+   "7d1eaa9b4a41": {
+    "bucket": "DRIFTED",
+    "decoded": "p=100000[[Pa]]+75[[m]]*1000[[(kg)/(m^3)]]*9.82[[(m)/(s^2)]]"
+   },
+   "7e2a71ab55d9": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "g(x)=sin(x)"
+   },
+   "7e69b45eb9a6": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "d(x)=sqrt(x^2+0.75^2-2*x*0.75+f(x)^2)"
+   },
+   "7ec8a8a4c742": {
+    "bucket": "DRIFTED",
+    "decoded": "(50[[(km)/(t)]])/(3.6[[((km)/(t))/((m)/(s))]])"
+   },
+   "7f4adc77b0e4": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "c=0"
+   },
+   "812977849d95": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "x"
+   },
+   "81321911bc77": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "v=invTan((R_y)/(R_x))"
+   },
+   "82f278166f26": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "C=c*m"
+   },
+   "836dd7265ba3": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "1000=20*s+42"
+   },
+   "858fadef8486": {
+    "bucket": "DRIFTED",
+    "decoded": "<1,-1>"
+   },
+   "85af06a265c2": {
+    "bucket": "DRIFTED",
+    "decoded": "O=a+b+n+4+3+ m"
+   },
+   "85bae37a6834": {
+    "bucket": "DRIFTED",
+    "decoded": "(PQ)=(d)/(sin(Q))*sin(∠QRP)"
+   },
+   "883d20983681": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "617.57=90.86 s"
+   },
+   "885180994289": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "y=12 x+18"
+   },
+   "8a9eb7ab4d7c": {
+    "bucket": "DRIFTED",
+    "decoded": "1200[[(*kWh)/(m^2*år)]]"
+   },
+   "8ce12d429a85": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "fsolve( /I\"FG6\",$*&KI%UnitG6$/I+modulenameG6\"I&UnitsG6$I(_syslibG6\"%*protectedG%*protectedG6#I#kgG6$QKC:\\Program~Files\\M"
+   },
+   "8dd338175e0a": {
+    "bucket": "DRIFTED",
+    "decoded": "LinReg(X,Y)"
+   },
+   "8e1db163e55f": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "x=2 ∨-(2)/(3)"
+   },
+   "8ec9f43f86eb": {
+    "bucket": "DRIFTED",
+    "decoded": "t=120 [[s]]"
+   },
+   "90e876485d24": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "f(x)=sin(3 x)"
+   },
+   "9142856bf890": {
+    "bucket": "DRIFTED",
+    "decoded": "∠BCA=∠GAF"
+   },
+   "92df840690a6": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "s(t)=-4 t+50"
+   },
+   "93f261935237": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "(2)/(5)*5"
+   },
+   "9413c57c79e9": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "ShowIntegral(0.5 x+1,0,2)"
+   },
+   "979ad92cfefc": {
+    "bucket": "DRIFTED",
+    "decoded": "plotResidualer(X,Y,LinReg)"
+   },
+   "98cfbf5b51b8": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "1=1+b"
+   },
+   "9b8e663f292a": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "y(x)=-(1)/(2)*g*((x)/(v_0*cos α))^2+v_0*sin α*((x)/(v_0*cos α))+y_0"
+   },
+   "9c9afa8ef934": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "j'(x)=2*(-0.65)*x+2.45"
+   },
+   "9cb39ed2f138": {
+    "bucket": "DRIFTED",
+    "decoded": "a=-7[[(m)/(s^2)]]"
+   },
+   "9ee4e0cc73b6": {
+    "bucket": "DRIFTED",
+    "decoded": "φ"
+   },
+   "a0581b7ef1bf": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "h(t):=(1)/(2)*t+14:"
+   },
+   "a1bb5be74566": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "(4+3 x)^2=4^2+(3 x)^2+2*4*3 x=16+9 x^2+24 x"
+   },
+   "a2e1b863b8f8": {
+    "bucket": "DRIFTED",
+    "decoded": "b=5-(-(4)/(3))*7"
+   },
+   "a2fc3e2627bd": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "h=1.2"
+   },
+   "a3d82eb9d320": {
+    "bucket": "BYTE_IDENTICAL",
+    "decoded": "t=(501600*[[J]])/(2200*[[W]])"
+   },
+   "a519d750f646": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "b=(100-2 a)/(2)"
+   },
+   "a641ba017e27": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "N(1)"
+   },
+   "a890677784b1": {
+    "bucket": "DRIFTED",
+    "decoded": "A=(1,3)"
+   },
+   "a9160d9fb03f": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "f(x):=-2 x+3:"
+   },
+   "a92c376f5d2b": {
+    "bucket": "DRIFTED",
+    "decoded": "R_t=R_0*(1+α_0*t)"
+   },
+   "ab64dc507c7b": {
+    "bucket": "BYTE_IDENTICAL",
+    "decoded": "V=1.5*[[L]]"
+   },
+   "ac33e1438db3": {
+    "bucket": "DRIFTED",
+    "decoded": "T_start=50[[°C]]"
+   },
+   "acca8fc00cee": {
+    "bucket": "DRIFTED",
+    "decoded": "C(a,b)"
+   },
+   "aeddb207bb91": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "solve( { /,&*&\"\"$\"\"\"I\"xG6\"\"\"\"\"\"\"\"\")!\"\"\"\"% } )"
+   },
+   "afbe32fa4de4": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "e'(x)"
+   },
+   "b00b73a2cdbb": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "10.9[[(kJ)/(°C)]]."
+   },
+   "b0b5ecdb3900": {
+    "bucket": "DRIFTED",
+    "decoded": "λ=h*(c)/(E_foton)"
+   },
+   "b0e10104d407": {
+    "bucket": "DRIFTED",
+    "decoded": "P=200 [[( W)/(m^2)]]*27000[[ m^2]]"
+   },
+   "b35591d90520": {
+    "bucket": "DRIFTED",
+    "decoded": "LinReg(År,Passagerer)"
+   },
+   "b522987e8556": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "7 x-3=4"
+   },
+   "b9dda8c9a0f5": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "5*10^4"
+   },
+   "ba62bb6c6775": {
+    "bucket": "DRIFTED",
+    "decoded": "(CD→) =sqrt((2.50)^2+(-1.50)^2)"
+   },
+   "bac3b4d3de76": {
+    "bucket": "DRIFTED",
+    "decoded": "⇕"
+   },
+   "bbf9d4edff77": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "m_tilbage=m_total-m_smeltet"
+   },
+   "be42ab185c21": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "A_t=(1)/(2)*20.35662148*43.097"
+   },
+   "bf1aac53d0be": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "a=sqrt(c^2-b^2)"
+   },
+   "c155d7349ada": {
+    "bucket": "DRIFTED",
+    "decoded": "M(15.38,7.4)"
+   },
+   "c1a3c314a878": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "l=3.4 cm"
+   },
+   "c1cf124a1c76": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "t=?"
+   },
+   "c281604b58b1": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "15*5.9+60"
+   },
+   "c324e64e0b90": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "l =4.2 m"
+   },
+   "c3420d594008": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "a"
+   },
+   "c3ab6023a35c": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "O=2*Pi*30.63899368"
+   },
+   "c410406b2950": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "a=0.5"
+   },
+   "c50f5e0c35b8": {
+    "bucket": "DRIFTED",
+    "decoded": "Q=(x_2,y_2)"
+   },
+   "c53b15dd6d27": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "(9-y-z)+2 y+4 z=15"
+   },
+   "c53c3066520b": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "2035.66214775+r^2-100*sqrt(r^2-464.33785225)=r^2"
+   },
+   "c54351fc1684": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "5+6"
+   },
+   "c5daf0438d0b": {
+    "bucket": "DRIFTED",
+    "decoded": "År:=(0,2,4,6,8,10):"
+   },
+   "c6465b10b025": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "t"
+   },
+   "ca431da79466": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "2 H_2O_2 → 2 H_2O + O_2"
+   },
+   "cc7d6f1ca7fc": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "f(x)=6*x^2+1"
+   },
+   "ccbde2692666": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "a=(y_2-y_1)/(x_2-x_1)"
+   },
+   "cd19faded112": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "solve( { /\"$]$,&*&\"#?\"\"\"I\"sG6\"\"\"\"\"\"\"$\"#U\"\"!\"\"\" } )"
+   },
+   "d14f99a81fe1": {
+    "bucket": "DRIFTED",
+    "decoded": "E8 := 4*x+8*y = 64;E9 := (E8) * (3);E10 := (E9) + (-24*y);"
+   },
+   "d18af671861a": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "y=x+1"
+   },
+   "d1c354744ee5": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "x^2=4"
+   },
+   "d2f0b2976efb": {
+    "bucket": "DRIFTED",
+    "decoded": "g_1=1-(-(0.35)/(1.15))"
+   },
+   "d3375dcb1990": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "-152.62=-24.714 x"
+   },
+   "d67219e9cde5": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "isolate( /,(*&\"\"#\"\"\"I\"xG6\"\"\"\"\"\"\"*&\"\"%\"\"\"I\"yG6\"\"\"\"!\"\"\"\"&\"\"\"\"\"!, y )"
+   },
+   "d888d83e0d41": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "with(Student(Calculus1)):"
+   },
+   "d8edf988e61e": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "nedre:=24.305-2*1.49002237119671"
+   },
+   "e1554900cff2": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "(F_1→)"
+   },
+   "e332bb083815": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "Q=?"
+   },
+   "e35c231e98a5": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "Q_=m*L_s"
+   },
+   "e387a1405f9c": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "ω=(2 Pi)/(12)"
+   },
+   "e4c11a497dd5": {
+    "bucket": "DRIFTED",
+    "decoded": "t:=(0,3,5,7,9,11):"
+   },
+   "e5dc7f663243": {
+    "bucket": "DRIFTED",
+    "decoded": "A=F*s*cos(ϕ)"
+   },
+   "e8b35ec36bb2": {
+    "bucket": "DRIFTED",
+    "decoded": "Q=c*m*ΔT"
+   },
+   "ea824031e08d": {
+    "bucket": "DRIFTED",
+    "decoded": "P=1.20[[kW]]"
+   },
+   "eb4448716622": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "f(g(x))"
+   },
+   "ee19ec7f31dc": {
+    "bucket": "DRIFTED",
+    "decoded": "d=2*(AD)+(DF)"
+   },
+   "eef8bb930c76": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "(a)/(sin(A))=(b)/(sin(B))=(c)/(sin(C))"
+   },
+   "f16a9248a12d": {
+    "bucket": "DRIFTED",
+    "decoded": "ρ=(m)/(V)"
+   },
+   "f18a46434629": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "24 x-2 y+12=0"
+   },
+   "f1a5e0d3ee97": {
+    "bucket": "DRIFTED",
+    "decoded": "F_n=m*g*sin(α)"
+   },
+   "f2ee90e03706": {
+    "bucket": "DRIFTED",
+    "decoded": "v^=a*t+v_0"
+   },
+   "f39f13227b33": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "A_1"
+   },
+   "f3d73f7a9651": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "S_ab=(6; -3)"
+   },
+   "f41981c09b45": {
+    "bucket": "DRIFTED",
+    "decoded": "R_s1=12 [[Ω]]+33 [[Ω]]"
+   },
+   "f48221f95d05": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "l=∫absqrt(1+f'(x)^2)dx"
+   },
+   "f63fcc042f24": {
+    "bucket": "RENDER_STABLE",
+    "decoded": "a=(791-155)/(10-3.)"
+   },
+   "f6af70c80a47": {
+    "bucket": "DRIFTED",
+    "decoded": "t=60[[m]]=3600[[s]]"
+   },
+   "f85f7c5bd0b0": {
+    "bucket": "DRIFTED",
+    "decoded": "4=-(1)/(2)*(-2)+b"
+   },
+   "f9b67a26792b": {
+    "bucket": "DRIFTED",
+    "decoded": "3.5[[dm^3]]"
+   },
+   "fb64a400cbfd": {
+    "bucket": "REENCODE_FAIL",
+    "decoded": "y=5 x - 2.5-1.5"
+   }
   }
- },
- "unmeasured": [
-  "encode",
-  "reverse"
- ]
+ }
 }

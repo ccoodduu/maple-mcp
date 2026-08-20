@@ -1,58 +1,25 @@
-import subprocess
-import time
-from pathlib import Path
+"""Talking to a running Maple, over the in-JVM agent's TCP port.
 
-AHK_SCRIPT = Path(__file__).resolve().parent.parent.parent / "maple_reload.ahk"
-AHK_EXE = Path.home() / "AppData/Local/Programs/AutoHotkey/v2/AutoHotkey64.exe"
+Agent-only by design: the single requirement is the `-javaagent` line in
+launch.ini. Driving the GUI with synthetic keystrokes was tried instead and
+removed — it needed a second install and a specific window layout, and it hid
+the real cause whenever it silently did nothing. Failures here name the
+requirement rather than falling back to something flakier.
+"""
+AGENT_PORT = 19876
 
-
-def _run_ahk(action: str, file_path: str = "") -> bool:
-    if not AHK_EXE.exists() or not AHK_SCRIPT.exists():
-        return False
-    args = [str(AHK_EXE), str(AHK_SCRIPT), action]
-    if file_path:
-        args.append(file_path)
-    try:
-        subprocess.run(args, timeout=15)
-        return True
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False
+AGENT_MISSING = (
+    "Maple's reload agent is not reachable on port 19876. Check that Maple is "
+    "running and that launch.ini has: "
+    "java_args=-javaagent:<PROJECT_DIR>/reload-agent.jar"
+)
 
 
 def get_open_document_path() -> str | None:
-    """Get the file path of the currently open Maple document."""
+    """Path of the document currently open in Maple, or None."""
     result = _send_agent("getpath")
     if result and not result.startswith("error"):
         return result
-
-    # Fallback: AHK window title
-    if not AHK_EXE.exists() or not AHK_SCRIPT.exists():
-        return None
-
-    import re
-    script = (
-        '#SingleInstance Force\n'
-        'SetTitleMatchMode 2\n'
-        'if WinExist("Maple ahk_class AutoHotkeyGUI") {\n'
-        '    title := WinGetTitle()\n'
-        '    FileAppend title, "*"\n'
-        '}\n'
-        'ExitApp\n'
-    )
-    tmp = AHK_SCRIPT.parent / "maple_title_tmp.ahk"
-    tmp.write_text(script)
-    try:
-        result = subprocess.run(
-            [str(AHK_EXE), str(tmp)],
-            timeout=5, capture_output=True, text=True
-        )
-        tmp.unlink(missing_ok=True)
-        title = result.stdout.strip()
-        match = re.match(r'(.+\.mw)', title)
-        if match:
-            return match.group(1)
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        tmp.unlink(missing_ok=True)
     return None
 
 
@@ -72,20 +39,19 @@ def _send_agent(cmd: str) -> str | None:
 
 
 def save_in_maple() -> bool:
-    result = _send_agent("save")
-    if result is not None:
-        return result == "ok"
-    return _run_ahk("save")
-
-
-AGENT_PORT = 19876
+    return _send_agent("save") == "ok"
 
 
 def reload_in_maple(file_path: str) -> bool:
-    result = _send_agent(f"reload {file_path}")
-    if result is not None:
-        return result == "ok"
-    return _run_ahk("reload", file_path)
+    return _send_agent(f"reload {file_path}") == "ok"
+
+
+def open_in_maple(file_path: str) -> tuple[bool, str]:
+    """Open a .mw in Maple. Returns (ok, detail)."""
+    result = _send_agent(f"open {file_path}")
+    if result is None:
+        return False, AGENT_MISSING
+    return result == "ok", result
 
 
 def reload_in_maple_async(file_path: str):

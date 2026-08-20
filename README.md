@@ -21,8 +21,8 @@ All equations are encoded as native Maple 2D Math — they render identically to
 ```
 Claude Desktop ←→ MCP Server (Python/stdio) ←→ Maple .mw file (XML)
                          ↓                             ↓
-             maplec.dll (warm kernel:           Java Agent (reload)
-             compute + encode + decode)         AHK fallback
+             maplec.dll (warm kernel:           Java Agent (reload,
+             compute + encode + decode)         open, save) on TCP 19876
 ```
 
 The server edits the .mw XML file directly (never `ET.write` — that corrupts base64), then tells Maple to reload via a Java Agent injected into Maple's JVM.
@@ -82,6 +82,7 @@ Restart both Maple and Claude Desktop.
 
 | Tool | Description |
 |------|-------------|
+| `create_document` | Create a new empty .mw, open it in Maple, and select it |
 | `set_document_path` | Select document (auto-detects from Maple window) |
 | `read_document` | Save + read with indented section hierarchy |
 | `execute` | Run Maple code in persistent kernel session |
@@ -158,7 +159,7 @@ Covering:
 - Equation round-trip is lossy for complex expressions (decoded equations don't always re-encode to identical XML)
 - `InertForm:-Parse` doesn't handle all Maple syntax (e.g. some procedural constructs)
 - LaTeX auto-conversion is basic — use Maple syntax for best results
-- Windows only (maplec.dll, AHK, Java Agent paths)
+- Windows only (maplec.dll, Java Agent paths)
 
 ## License
 

@@ -5,7 +5,9 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent, ImageContent
 
 from maple_mcp.maple_engine import engine
-from maple_mcp.maple_reload import reload_in_maple, save_in_maple, get_open_document_path
+from maple_mcp.maple_reload import (
+    reload_in_maple, save_in_maple, get_open_document_path, open_in_maple
+)
 from maple_mcp.image_decode import decode_maple_image
 from maple_mcp import document
 
@@ -159,8 +161,8 @@ def _save_and_edit(edit_fn) -> str:
 
     hint = ""
     # The edit ALWAYS lands in the .mw file. Refreshing the open Maple window is a
-    # separate channel (the agent, or an AHK fallback) and can fail on its own —
-    # distinct from the kernel agent used by run_executable.
+    # separate channel (the reload agent) and can fail on its own — distinct from
+    # the kernel used by run_executable.
     if not reloaded:
         hint += ("\n\nNote: the edit was written to the file, but Maple's open "
                  "window could not be refreshed — it may be busy or waiting on a "
@@ -258,6 +260,42 @@ def _format_entries(entries: list[dict]) -> list[TextContent | ImageContent]:
 
     _flush_text()
     return result
+
+
+@mcp.tool()
+def create_document(file_path: str) -> str:
+    """Create a new empty Maple document, open it in Maple, and select it.
+
+    The .mw is authored by Maple itself (DocumentTools:-Layout), so it is a
+    valid document for whichever Maple version is installed. Will not overwrite
+    an existing file.
+
+    After this, the new document is the active one — write to it with
+    append_content / insert_after and run it with run_executable.
+
+    Args:
+        file_path: Full path for the new .mw file (directory must exist)
+    """
+    global _document_path
+
+    try:
+        created = document.create_document(file_path)
+    except ValueError as e:
+        return f"Could not create document: {e}"
+
+    _document_path = Path(created)
+
+    ok, detail = open_in_maple(created)
+    if ok:
+        return f"Created and opened in Maple: {created}"
+    # The file is on disk and selected; only the GUI step failed, so say what
+    # is still needed rather than implying nothing happened.
+    return (
+        f"Created: {created}\n"
+        f"Could not open it in Maple ({detail}). Open it manually "
+        f"(File > Open) before editing, since edits are pushed to the open "
+        f"document."
+    )
 
 
 @mcp.tool()
@@ -639,8 +677,7 @@ def _window_grab_fallback(reason: str) -> list[TextContent | ImageContent] | str
         import io
 
         user32 = ctypes.windll.user32
-        hwnd = user32.FindWindowW("AutoHotkeyGUI", None) or \
-            user32.FindWindowW("SunAwtFrame", None)
+        hwnd = user32.FindWindowW("SunAwtFrame", None)
         if not hwnd:
             return f"Could not render document ({reason}) and no Maple window to grab."
 

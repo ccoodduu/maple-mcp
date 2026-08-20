@@ -59,8 +59,11 @@ def _replace_units_in_expr(expr: str) -> str:
                     parts.append(tok)
             return f"Unit({''.join(parts)})"
         return f"Unit('{unit}')"
-    # Normalize "number [[unit]]" → "number*[[unit]]" (space → multiplication)
-    expr = re.sub(r'(\w)\s+\[\[', r'\1*[[', expr)
+    # Insert explicit * before [[ when preceded by a word char or ).
+    # InertForm:-Parse's implicit multiplication is unreliable inside fractions
+    # and after closing parens — "(-13.6[[eV]])/(n^2)" fails, but
+    # "(-13.6*[[eV]])/(n^2)" parses cleanly once the unit is substituted out.
+    expr = re.sub(r'([\w\)])\s*\[\[', r'\1*[[', expr)
     return re.sub(r'\[\[(.+?)\]\]', _replace, expr)
 
 
@@ -1283,3 +1286,59 @@ def insert_content(file_path: str, items: list[dict]) -> str:
     _append_blocks(file_path, blocks, bkp)
     new_xml = "\n".join(_block_to_xml(b) for b in blocks)
     return _readback(new_xml)
+
+
+def _empty_worksheet_xml() -> str:
+    """Maple's own XML for an empty document.
+
+    DocumentTools:-Layout builds the worksheet structure and XMLTools serializes
+    it, so the file is authored by Maple rather than hand-synthesized. That is
+    what keeps it version-correct: Maple fills in `minor` and every default
+    attribute itself, and a new Maple release changes the output here rather
+    than silently producing a file it refuses to open.
+    """
+    from maple_mcp.maple_engine import maple_version
+
+    m = re.search(r"(\d{4})", maple_version())
+    if not m:
+        raise ValueError(
+            "Cannot determine Maple version for the new document's Version tag"
+        )
+    major = m.group(1)
+
+    code = (
+        f"ws := DocumentTools:-Layout:-Worksheet("
+        f"DocumentTools:-Layout:-Version(major={major})):\n"
+        f'printf("%s", XMLTools:-PrintToString(ws));'
+    )
+    body = engine.execute(code)
+    if not body or not body.lstrip().startswith("<Worksheet"):
+        raise ValueError(f"Maple did not return worksheet XML: {body[:200]!r}")
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + body
+
+
+def create_document(file_path: str) -> str:
+    """Create a new empty .mw document at `file_path`.
+
+    Refuses to overwrite an existing file — creating a document must never
+    destroy one. Validates the generated XML before writing, matching the
+    whole-document check `_commit` applies to every edit.
+    """
+    path = Path(file_path)
+    if path.suffix.lower() != ".mw":
+        raise ValueError(f"Not a .mw path: {file_path}")
+    if path.exists():
+        raise ValueError(
+            f"File already exists: {file_path} — refusing to overwrite it"
+        )
+    if not path.parent.exists():
+        raise ValueError(f"Directory does not exist: {path.parent}")
+
+    xml = _empty_worksheet_xml()
+    try:
+        ET.fromstring(xml.encode())
+    except ET.ParseError as e:
+        raise ValueError(f"Generated worksheet is not valid XML: {e}") from e
+
+    path.write_text(xml, encoding="utf-8")
+    return str(path)

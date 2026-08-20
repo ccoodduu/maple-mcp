@@ -41,6 +41,8 @@ public class ReloadAgent {
                             out.println(exportPdf(cmd.substring(7).trim()));
                         } else if ("evalnew".equals(cmd)) {
                             out.println(evalNew());
+                        } else if (cmd != null && cmd.startsWith("open ")) {
+                            out.println(open(cmd.substring(5).trim()));
                         } else if ("getpath".equals(cmd)) {
                             out.println(getOpenPath());
                         } else {
@@ -188,6 +190,69 @@ public class ReloadAgent {
             log("evalnew error: " + t);
             if (t.getCause() != null) log("  cause: " + t.getCause());
             return "error: " + t;
+        }
+    }
+
+    // Open a .mw in Maple the same way File > Open does once its chooser has
+    // returned a file: WmiWorksheetFileOpen.loadAFile does the whole job —
+    // new tab/window, styles, backward-compat check, and (unlike loadContents)
+    // it sets the view's file path, so getpath/save/reload work on the result.
+    // It is protected, hence setAccessible.
+    private static String open(String filePath) {
+        log("open requested: " + filePath);
+        try {
+            final java.io.File file = new java.io.File(filePath);
+            if (!file.isFile()) return "error: no such file: " + filePath;
+
+            // Reopening an open file would give it a second tab, so treat an
+            // already-open document as success and leave it alone.
+            Object mgr = getManager();
+            if (mgr != null) {
+                Object already = mgr.getClass()
+                    .getMethod("isFileOpen", String.class).invoke(mgr, filePath);
+                if (Boolean.TRUE.equals(already)) {
+                    log("already open");
+                    return "ok";
+                }
+            }
+
+            Class<?> openCls = Class.forName(
+                "com.maplesoft.worksheet.controller.file.WmiWorksheetFileOpen");
+            Class<?> docViewCls = Class.forName(
+                "com.maplesoft.mathdoc.view.WmiMathDocumentView");
+            final java.lang.reflect.Method loadAFile =
+                openCls.getDeclaredMethod("loadAFile", java.io.File.class, docViewCls);
+            loadAFile.setAccessible(true);
+
+            // Context view for the open. Null is acceptable — Maple then opens
+            // in a new window rather than beside an existing one.
+            Object ctx = null;
+            try {
+                Object wnd = getActiveWindow();
+                if (wnd != null) {
+                    ctx = wnd.getClass().getMethod("getWorksheetView").invoke(wnd);
+                }
+            } catch (Exception ignored) {
+                log("no context view, opening standalone");
+            }
+
+            final Object fCtx = ctx;
+            final String[] result = {"pending"};
+            javax.swing.SwingUtilities.invokeAndWait(() -> {
+                try {
+                    loadAFile.invoke(null, file, fCtx);
+                    result[0] = "ok";
+                    log("open complete");
+                } catch (Exception e) {
+                    Throwable c = e.getCause() != null ? e.getCause() : e;
+                    log("open EDT error: " + c);
+                    result[0] = "error: " + c;
+                }
+            });
+            return result[0];
+        } catch (Exception e) {
+            log("open error: " + e.getMessage());
+            return "error: " + e.getMessage();
         }
     }
 

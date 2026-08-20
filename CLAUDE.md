@@ -1,6 +1,7 @@
 # Maple MCP Server
 
-MCP server that lets Claude read, write, and edit Maple 2025 Document mode (.mw) assignments.
+MCP server that lets Claude read, write, and edit Maple Document mode (.mw) assignments.
+Version-independent: verified on Maple 2025 and 2026 (see "Porting to a new Maple version").
 
 ## Architecture
 
@@ -19,7 +20,6 @@ Claude Desktop ←→ MCP Server (Python) ←→ Maple .mw file (XML)
 - **Image codec** (`image_decode.py`) - Wheeler compression + custom Base64 (reverse-engineered from Maple's Java)
 - **Render module** (`maple_render.py`) - renders the saved .mw to images for `screenshot_maple` (see below)
 - **Java Agent** (`reload-agent.jar`) - injected into Maple's JVM via `-javaagent` in `launch.ini`, provides TCP server on port 19876 for save/reload/getpath without focus stealing
-- **AHK fallback** (`maple_reload.ahk`) - ControlSend to SunAwtFrame if agent unavailable
 
 ### screenshot_maple renders via PDF, not a screen grab
 `screenshot_maple` spawns a throwaway Maple JVM (`maple-export.jar` → `WmiWorksheetExportUtils.exportPDF`) that parses the SAVED .mw from disk into a fresh model and exports a PDF — the same path as File ▸ Export As ▸ PDF. PyMuPDF then rasterizes each page to an image. This is window-independent (works with Maple hidden, occluded, or closed) and full-fidelity. Must run NON-headless (the PDF formatter builds invisible Swing owner frames; headless throws `HeadlessException`). If export fails/times out it falls back to a live-window `ImageGrab`.
@@ -31,6 +31,15 @@ ElementTree re-serializes XML and corrupts base64 data (images, equations, Drawi
 
 ### Validate the whole document before every write
 Raw-splice edits are fast but a mis-computed offset or unescaped char would silently corrupt the .mw. `document._commit()` runs `ET.fromstring(content.encode())` on the *entire* spliced document before `write_text`; on a parse error it discards the just-made backup and raises, leaving the file untouched. The backup is pushed (via `backup.push`) only AFTER all read-only match resolution succeeds, so a no-match never leaves a phantom undo step.
+
+### New documents are authored by Maple, not by a template
+`create_document` builds the .mw with `DocumentTools:-Layout:-Worksheet(Version(major=<installed year>))`
+and serializes it with `XMLTools:-PrintToString`, so Maple writes its own format —
+it fills in `minor` and every default attribute itself. A hand-written template
+would instead pin one Maple version and risk emitting a file Maple refuses to
+open (the same trap that keeps table authoring deferred). `tests/test_create_document.py`
+proves the output is openable by round-tripping it through the PDF export loader,
+which is the same parse path as File ▸ Open.
 
 ### Content matching, not position-based
 All edit operations use content matching (like Edit tool's old_string). Match text corresponds exactly to what read_document outputs. For sections, include `#` prefix (e.g. `"## b)"`).
@@ -67,6 +76,7 @@ Equations use MAPLE syntax, not LaTeX. Auto-conversion from LaTeX is attempted b
 
 | Tool | Purpose |
 |------|---------|
+| `create_document` | Create a new empty .mw, open it in Maple, and select it |
 | `set_document_path` | Select document (auto-detects from Maple window) |
 | `read_document` | Auto-save + read with indented hierarchy |
 | `execute` | Run Maple code in persistent kernel |
@@ -88,7 +98,6 @@ read_document prefixes each line with its `[N]` block index; edit tools accept `
 ```
 maple-mcp/
 ├── CLAUDE.md
-├── maple_reload.ahk          # AHK v2 fallback for save/reload
 ├── reload-agent.jar           # Java agent for Maple JVM
 ├── maple-export.jar           # Standalone PDF-export launcher (for screenshot_maple)
 ├── java/ReloadAgent.java      # Agent source
@@ -101,7 +110,7 @@ maple-mcp/
     ├── server.py              # MCP tools
     ├── document.py            # .mw XML read/write/match
     ├── maple_engine.py        # Kernel + equation encode/decode
-    ├── maple_reload.py        # Save/reload via agent or AHK
+    ├── maple_reload.py        # Save/reload/open via the agent (TCP)
     ├── maple_render.py        # .mw -> PDF -> page images (screenshot_maple)
     ├── image_decode.py        # Wheeler + Base64 image codec
 ```
@@ -117,7 +126,7 @@ jar cfe maple-export.jar MapleExport -C _b MapleExport.class
 
 `--probe` checks the WHOLE private-API surface the project binds to — this
 launcher's export call plus every `com.maplesoft.*` class `ReloadAgent` reaches
-by reflection (15 members over 12 classes). Needs no licence and no desktop
+by reflection (17 members over 14 classes). Needs no licence and no desktop
 session, since it only resolves classes and members, so it is the cheapest first
 check when porting. Exit 0 = all resolved; each failure line says whether the
 class vanished, the arity changed, or only the parameter types differ:
@@ -149,8 +158,11 @@ line. Manual steps (replace `<PROJECT_DIR>` with this repo's path):
    choice and is never second-guessed. `maple_engine.maple_version()` reads the
    version without starting the kernel, so it works on an expired licence.
 2. `launch.ini`: add `java_args=-javaagent:<PROJECT_DIR>/reload-agent.jar`
-3. AHK v2 at `<LOCALAPPDATA>\Programs\AutoHotkey\v2\AutoHotkey64.exe`
-4. User runs Maple inside AHK wrapper (`maple-windows.ahk`) - Maple's SunAwtFrame is child of AutoHotkeyGUI
+3. Restart Maple, then Claude Desktop.
+
+That is the whole setup. Talking to a running Maple goes through the agent's TCP
+port only — no window manager, wrapper, or GUI automation is involved, and
+nothing depends on Maple's window layout or focus.
 
 ## Porting to a new Maple version
 
@@ -158,7 +170,7 @@ The dangerous failures are the silent ones. A moved Java API or a missing DLL
 throws; the equation decode layer just returns something subtly different, and
 nothing complains. So the port is run as a diff, not as a smoke test.
 
-1. `java -cp "<MAPLE>/java/*;maple-export.jar" MapleExport --probe` — do all 15
+1. `java -cp "<MAPLE>/java/*;maple-export.jar" MapleExport --probe` — do all 17
    required members of Maple's private Java API still exist? No licence or
    desktop session needed, so run it before installing anything else.
 2. `python tools/baseline.py --check` — per-item diff of the equation pipeline
@@ -178,11 +190,15 @@ Maple would silently redefine what is being compared.
 
 ## Known Issues / Future Work
 
-- `tests/golden/maple-baseline.json` currently holds ONLY the kernel-free `prepare`
-  suite: the Maple 2025 licence expired 01-aug-2026, so `encode`/`reverse` are
-  recorded as unmeasured. Re-run `tools/baseline.py --record` on the first
-  licensed install to complete it — until then there is no "before" side to
-  compare a port against
+- `tests/golden/maple-baseline.json` is now recorded in full on **Maple 2026.1**
+  (all three suites): `prepare` 272 items, `encode` 272 items (266 ok),
+  `reverse` 200 items (78 render-stable, 4 byte-identical, 70 drifted,
+  47 re-encode-fail, 1 decode-bad). Caveat for whoever ports next: only
+  `prepare` was ever measured on 2025, and it crossed 2025 → 2026 with 0
+  regressions. `encode`/`reverse` have no 2025 side — the 2025 licence expired
+  01-aug-2026 before they could be recorded — so 2026.1 is their reference
+  zero, and a regression 2026 may have introduced relative to 2025 would be
+  baked in as "expected" rather than reported
 - Equation round-trip is lossy: decoded equations (e.g. `∫x²dx`) don't always re-encode to identical XML
 - `_count_section_depth` scans XML linearly - could be slow on very large documents
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax
