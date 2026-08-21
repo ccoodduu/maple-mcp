@@ -739,15 +739,23 @@ def read_document(file_path: str, start: int = 0, end: int | None = None) -> lis
                     for group in child.iter("Group"):
                         _process_group(group)
                     new_entries = entries[pre_len:]
-                    if len(new_entries) > 1:
+                    # Merge multi-entry PBs into one text entry, but keep image
+                    # entries out of the collapse — they carry no "content" and
+                    # would be silently dropped (losing the encoded image data).
+                    image_entries = [e for e in new_entries
+                                     if e.get("type") == "image"]
+                    others = [e for e in new_entries
+                              if e.get("type") != "image"]
+                    if len(others) > 1:
                         parts = []
-                        for e in new_entries:
+                        for e in others:
                             c = e.get("content", "")
                             if isinstance(c, list):
                                 c = "; ".join(c)
                             if c:
                                 parts.append(c)
                         del entries[pre_len:]
+                        entries.extend(image_entries)
                         entries.append({"type": "text", "content": " ".join(parts)})
                     # If no entries produced, it's an empty line
                     if len(entries) == pre_len:

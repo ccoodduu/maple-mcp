@@ -50,3 +50,45 @@ class TestImageCodec:
                + struct.pack('>I', 0) + b'IEND' + iend_crc)
         result = encode_maple_image(png)
         assert isinstance(result, str)
+
+
+class TestImageRead:
+    """read_document must surface Image elements as image entries."""
+
+    def _mw_with_image(self, tmp_path, extra_text):
+        """Build a .mw whose PB holds a Text-field with an Image (+ optional text),
+        mirroring the real structure: PB > Group > Input > Text-field > Image."""
+        from maple_mcp.image_decode import encode_maple_image
+
+        encoded = encode_maple_image(b'\x89PNG\r\n\x1a\nfake-png-payload')
+        content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<Worksheet>
+<Presentation-Block>
+<Group view="presentation" hide-input="false" hide-output="false" inline-output="false" labelreference="L1" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field style="Text" layout="Normal">{extra_text}<Image height="10" width="10" zoomable="false">{encoded}</Image></Text-field></Input>
+</Group></Presentation-Block>
+</Worksheet>'''
+        p = tmp_path / "img.mw"
+        p.write_text(content, encoding="utf-8")
+        return str(p)
+
+    def test_image_alongside_text_survives(self, tmp_path):
+        """An image sharing its block with text must not be dropped by the
+        multi-entry merge (regression: the merge collapsed the PB to one text
+        entry and discarded the image's encoded data)."""
+        from maple_mcp.document import read_document
+
+        entries = read_document(self._mw_with_image(tmp_path, "Caption text."))
+        images = [e for e in entries if e.get("type") == "image"]
+        assert len(images) == 1
+        assert images[0].get("encoded")
+        texts = [e for e in entries if e.get("type") == "text"]
+        assert any("Caption text." in e.get("content", "") for e in texts)
+
+    def test_solo_image_survives(self, tmp_path):
+        from maple_mcp.document import read_document
+
+        entries = read_document(self._mw_with_image(tmp_path, ""))
+        images = [e for e in entries if e.get("type") == "image"]
+        assert len(images) == 1
+        assert images[0].get("encoded")
