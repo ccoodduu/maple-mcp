@@ -34,6 +34,12 @@ and read `maple://help/markup` if unsure. The gotchas it covers (don't forget th
   block (it becomes an inert `Int` that computes nothing).
 - Fractions as `(a)/(b)`; Greek by name (`Delta`, `rho`); `Delta*T` → ΔT; primes `f'(x)`,
   `g''(x)`; numbers+units `{{200*[[kg]]}}`.
+- Vectors: `<1,2>` column, `<1|2>` row, `vec(a)` arrow over the name, `a . b` dot product,
+  `Matrix([[1,2],[3,4]])`. Define with `{!vec(a) := <1,2>!}`, compute with
+  `{!vec(a) . vec(b)!}`, display with `{{vec(a) = <1,2>}}`. `abs(vec(a))` is display-only
+  for the length — to COMPUTE length/angle/cross product, put `{!with(Gym):!}` at the top
+  (like the Units line) and use `længde(v)`, `vinkel(u,v)`, `tværvektor(v)`; cross product
+  needs `{!with(LinearAlgebra):!}` and `u &x v`.
 - Avoid Maple **protected names** as variables: `I`, `D`, `O`, `gamma`, `Pi`, `Catalan`.
 - Mark **unknowns** with `?`: `{{V = ?}}`, `{{E[kin] = ?}}`.
 - **Verify** with `screenshot_maple` (whole doc, or `match="Opgave 4"` / `pages="2"` /

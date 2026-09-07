@@ -2009,8 +2009,8 @@
     "decoded": "t_R*v_0=s_0"
    },
    "25176e0b0049": {
-    "bucket": "DRIFTED",
-    "decoded": "(AE)=7-sqrt(11.)"
+    "bucket": "RENDER_STABLE",
+    "decoded": "abs(AE)=7-sqrt(11.)"
    },
    "257fe5e55c29": {
     "bucket": "DRIFTED",
@@ -2038,7 +2038,7 @@
    },
    "2c4af22c5411": {
     "bucket": "DRIFTED",
-    "decoded": "(CB→) =sqrt((-2.50)^2+(-1.50)^2)"
+    "decoded": "abs(vec(CB)) =sqrt((-2.50)^2+(-1.50)^2)"
    },
    "2cfb96762e6b": {
     "bucket": "RENDER_STABLE",
@@ -2050,7 +2050,7 @@
    },
    "31167dee433d": {
     "bucket": "DRIFTED",
-    "decoded": "Tid:=(0.5,1,2,3,4,5):"
+    "decoded": "Tid:=[0.5,1,2,3,4,5]:"
    },
    "317b89d7e4f6": {
     "bucket": "DRIFTED",
@@ -2093,8 +2093,8 @@
     "decoded": "K(x):=3 x-6:"
    },
    "40a674555de6": {
-    "bucket": "DRIFTED",
-    "decoded": "v=(arcCos(x_1*x_2+y_1*y_2))/((a→)*(b→))"
+    "bucket": "RENDER_STABLE",
+    "decoded": "v=(arcCos(x_1*x_2+y_1*y_2))/(abs(vec(a))*abs(vec(b)))"
    },
    "40adfa82acf8": {
     "bucket": "REENCODE_FAIL",
@@ -2246,7 +2246,7 @@
    },
    "6ff576dc5654": {
     "bucket": "REENCODE_FAIL",
-    "decoded": "((DE))/(|AB|)"
+    "decoded": "(abs(DE))/(|AB|)"
    },
    "6ffe09d5bce4": {
     "bucket": "REENCODE_FAIL",
@@ -2329,7 +2329,7 @@
     "decoded": "1000=20*s+42"
    },
    "858fadef8486": {
-    "bucket": "DRIFTED",
+    "bucket": "RENDER_STABLE",
     "decoded": "<1,-1>"
    },
    "85af06a265c2": {
@@ -2338,7 +2338,7 @@
    },
    "85bae37a6834": {
     "bucket": "DRIFTED",
-    "decoded": "(PQ)=(d)/(sin(Q))*sin(∠QRP)"
+    "decoded": "abs(PQ)=(d)/(sin(Q))*sin(∠QRP)"
    },
    "883d20983681": {
     "bucket": "REENCODE_FAIL",
@@ -2498,7 +2498,7 @@
    },
    "ba62bb6c6775": {
     "bucket": "DRIFTED",
-    "decoded": "(CD→) =sqrt((2.50)^2+(-1.50)^2)"
+    "decoded": "abs(vec(CD)) =sqrt((2.50)^2+(-1.50)^2)"
    },
    "bac3b4d3de76": {
     "bucket": "DRIFTED",
@@ -2566,7 +2566,7 @@
    },
    "c5daf0438d0b": {
     "bucket": "DRIFTED",
-    "decoded": "År:=(0,2,4,6,8,10):"
+    "decoded": "År:=[0,2,4,6,8,10]:"
    },
    "c6465b10b025": {
     "bucket": "RENDER_STABLE",
@@ -2613,16 +2613,16 @@
     "decoded": "isolate( /,(*&\"\"#\"\"\"I\"xG6\"\"\"\"\"\"\"*&\"\"%\"\"\"I\"yG6\"\"\"\"!\"\"\"\"&\"\"\"\"\"!, y )"
    },
    "d888d83e0d41": {
-    "bucket": "RENDER_STABLE",
-    "decoded": "with(Student(Calculus1)):"
+    "bucket": "DRIFTED",
+    "decoded": "with(Student[Calculus1]):"
    },
    "d8edf988e61e": {
     "bucket": "RENDER_STABLE",
     "decoded": "nedre:=24.305-2*1.49002237119671"
    },
    "e1554900cff2": {
-    "bucket": "REENCODE_FAIL",
-    "decoded": "(F_1→)"
+    "bucket": "RENDER_STABLE",
+    "decoded": "abs(vec(F_1))"
    },
    "e332bb083815": {
     "bucket": "RENDER_STABLE",
@@ -2638,7 +2638,7 @@
    },
    "e4c11a497dd5": {
     "bucket": "DRIFTED",
-    "decoded": "t:=(0,3,5,7,9,11):"
+    "decoded": "t:=[0,3,5,7,9,11]:"
    },
    "e5dc7f663243": {
     "bucket": "DRIFTED",
@@ -2657,8 +2657,8 @@
     "decoded": "f(g(x))"
    },
    "ee19ec7f31dc": {
-    "bucket": "DRIFTED",
-    "decoded": "d=2*(AD)+(DF)"
+    "bucket": "RENDER_STABLE",
+    "decoded": "d=2*abs(AD)+abs(DF)"
    },
    "eef8bb930c76": {
     "bucket": "RENDER_STABLE",

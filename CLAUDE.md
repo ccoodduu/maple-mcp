@@ -50,6 +50,19 @@ Use `InertForm:-Typeset(InertForm:-Parse(expr), inert=false)` to typeset equatio
 ### Units need special handling
 `Unit('Omega')` renders literally unless wrapped in proper Typesetting with `msemantics="Unit"`. The encoder builds `mfenced+msemantics` markup. `with(Units[Standard])` breaks `Int`/`Sum` typesetting - use `InertForm` instead of `unwith` hack.
 
+### Vectors and matrices use the palette's markup, not InertForm's
+`InertForm:-Typeset` renders `<1,2>` as an inline `⟨1,2⟩` (`mfenced` with
+`msemantics="<,>"`). Real assignments show what Maple's Matrix palette writes
+into a 2D-input block instead, and that is what the GUI parses back into a
+Vector when the block is executed:
+`maction(mfenced(mrow(mtable(mtr(mtd(mrow(el)))…)), msemantics="ColVector", open="[", close="]"), actiontype="rtableaddress")`
+(`RowVector` / `Matrix` likewise). `vec(a)` becomes the Accents palette's
+`mover(mrow(mi("a")), mo("&RightArrow;"), accent="true")`, which Maple treats as
+the atomic name `` `#mover(mi("a"),mo("&rarr;"))` ``. `_vector_fixup` rewrites
+InertForm's output into these forms; `TS2Str` decodes them (and the output-side
+`mscrolltable`) back to `<a,b>` / `<a|b>` / `Matrix([[…]])` / `vec(a)`.
+`tests/fixtures/vector_blobs.json` pins the decoder to blobs Maple itself wrote.
+
 ### Highlight colors at 3 levels
 Maple requires background on: (1) Text-field element, (2) Font elements, (3) inside equation Typesetting data (on each mi/mn/mo via `subsindets`).
 
@@ -64,6 +77,12 @@ Maple requires background on: (1) Text-field element, (2) Font elements, (3) ins
 __underline__         underlined text
 {color:R,G,B}text{/color}  highlight background
 [[unit]]              Maple unit in equations (e.g. [[Omega]], [[J/(kg*degC)]])
+<a,b>  <a|b>          column / row vector (renders as the palette's bracketed column)
+Matrix([[a,b],[c,d]]) matrix (renders as a bracketed grid)
+vec(a)                arrow accent over a name (a⃗); Maple treats it as one atomic name
+a . b   a &x b        dot product, cross product (&x evaluates only after with(LinearAlgebra))
+abs(vec(a))           length |a⃗| as DISPLAY; executed it is elementwise — compute
+                      with Gym's længde(v) / vinkel(u,v) or LinearAlgebra's Norm(v,2)
 {{expr => op}}        Context-panel operation: input ──op──▶ computed result
                       (op: solve, factor, simplify, expand, evaluate). The
                       result is computed by the kernel; renders as an mover
@@ -192,14 +211,20 @@ Maple would silently redefine what is being compared.
 
 - `tests/golden/maple-baseline.json` is now recorded in full on **Maple 2026.1**
   (all three suites): `prepare` 272 items, `encode` 272 items (266 ok),
-  `reverse` 200 items (78 render-stable, 4 byte-identical, 70 drifted,
-  47 re-encode-fail, 1 decode-bad). Caveat for whoever ports next: only
+  `reverse` 200 items (82 render-stable, 4 byte-identical, 67 drifted,
+  46 re-encode-fail, 1 decode-bad; re-recorded 2026-08-26 after the
+  vector/matrix decoder landed — it moved 5 blobs to render-stable and turned
+  `with(Student(Calculus1))` into the correct `with(Student[Calculus1])`).
+  Caveat for whoever ports next: only
   `prepare` was ever measured on 2025, and it crossed 2025 → 2026 with 0
   regressions. `encode`/`reverse` have no 2025 side — the 2025 licence expired
   01-aug-2026 before they could be recorded — so 2026.1 is their reference
   zero, and a regression 2026 may have introduced relative to 2025 would be
   baked in as "expected" rather than reported
 - Equation round-trip is lossy: decoded equations (e.g. `∫x²dx`) don't always re-encode to identical XML
+- Pre-existing (NOT vector-related): `with(Units:-Simple):` decodes as `withUnits:-Simple:` (parens dropped) on the FIRST `decode_equation` after a cold kernel start — a `:-` member inside an mfenced with a trailing suppress-`:` mis-handled while `Typesetting` is only partly loaded. It self-heals from the 2nd call. Confirmed on committed HEAD, so not introduced here; `eval(Typesetting)` in the warmup looked like a fix but made it non-self-healing, so it was reverted. Cosmetic (the STORED blob is correct, Maple executes it fine); to avoid the read glitch entirely write `with(Units[Simple]):`, which decodes correctly cold. Note also that `{!with(Units:-Simple):!}` executed inline in the GUI is reduced by Maple's own parser to `:` (while `{!with(Gym):!}` / `{!with(LinearAlgebra):!}` survive) — another reason to prefer `with(Units[Simple]):`
+- `launch.ini` holds ONE `java_args=` line. Another tool's installer (seen: `MaplePrintFix`, 2026-08-20) can overwrite it with its own `-javaagent`, which silently drops `reload-agent.jar` — Maple runs, but port 19876 is dead and every reload/`run_executable` fails. Fix by putting BOTH agents on the same line: `java_args=-javaagent:<other>.jar -javaagent:<PROJECT_DIR>/reload-agent.jar`, then restart Maple. `install.ps1` only appends a second line, which is not merged.
+- Output equations: `read_document` decodes the `display` attribute of a `2D Output` equation (the typeset form) and falls back to the element text (the kernel value, which decodes as `[]` for rtables and most other values)
 - `_count_section_depth` scans XML linearly - could be slow on very large documents
 - LaTeX auto-conversion is basic - complex LaTeX may need manual conversion to Maple syntax
 - Plots: a plot is the rendered OUTPUT of a plot command — `<Output><Text-field style="Maple Plot"><Plot type="two-dimensional" …>%m CURVES base64</Plot>`. Author one by writing an executable `{!plot(f(x), x=a..b)!}` / `{!pointplot(X,Y)!}` and calling `run_executable` (Maple generates the Plot data — it's not synthesizable). read_document surfaces it as `[PLOT: graph]` (detection verified against real assignments: tag `Plot`).

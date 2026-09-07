@@ -19,6 +19,7 @@ __pycache__/
 !pyproject.toml
 !tools/edgecase_corpus.json
 !tests/fixtures/blob_corpus.json
+!tests/fixtures/vector_blobs.json
 !tests/golden/maple-baseline.json
 extracted_*
 tmp_*

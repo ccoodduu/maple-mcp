@@ -39,6 +39,10 @@ Inline markup (MAPLE syntax, NOT LaTeX):
   **bold**  *italic*  __underline__
   {color:R,G,B}text{/color}   highlight background, e.g. {color:255,255,0}svar{/color}
   [[unit]]             unit inside math: [[kg]], [[(m)/(s^2)]], [[(J)/(kg*degC)]]
+  <a,b>  <a|b>         column / row vector — renders as the palette's bracketed column
+  Matrix([[a,b],[c,d]]) matrix — renders as a bracketed grid
+  vec(a)               arrow accent over a name (a⃗) — one atomic name to Maple
+  a . b   a &x b       dot product, cross product;  abs(vec(a)) = length |a⃗|
   text [align:right]   right-align the block (also [align:center]) — a trailing tag
 
 Rules:
@@ -64,6 +68,17 @@ Rules:
     Omega; combine with a variable via *: Delta*T renders ΔT. Subscripts: c[p] or c_p.
     Derivatives as primes: f'(x), g''(x). Unknowns: {{V = ?}}, {{E[kin] = ?}}.
   - Coordinates/points: write in prose ("punktet (2, 1)"), not {{(2,1)}}.
+  - Vectors: {{vec(a) = <1,2>}} displays a column vector; {!vec(a) := <1,2>!} defines
+    one and {!vec(a) . vec(b)!} / {!M . vec(a)!} / {!2*vec(a) + <1,1>!} compute (Maple
+    parses the column back into a Vector). abs(vec(a)) is DISPLAY notation for the
+    length |a⃗| — executed, Maple applies abs elementwise and returns a vector. To
+    COMPUTE a length, angle or cross product, load a package once at the top:
+      {!with(Gym):!}            længde(v), vinkel(u,v), dotP(u,v), tværvektor(v),
+                                enhedsvektor(v), proj(u,v)
+      {!with(LinearAlgebra):!}  Norm(v, 2), CrossProduct(u,v), and the u &x v operator
+    Without the package these stay unevaluated. Angle formula for display:
+    {{cos(v) = (vec(a) . vec(b))/(abs(vec(a))*abs(vec(b)))}}. Negative entries as
+    <-1.5,2>. Matrices: Matrix([[1,2],[3,4]]), M . vec(a), Determinant(M).
   - Plots: write an executable plot command, e.g. {!plot(f(x), x = a .. b)!} or
     {!pointplot(X, Y)!}, then call run_executable — Maple renders the graph (you
     can't author plot data directly). read_document shows it as "[PLOT: graph]".
@@ -529,14 +544,42 @@ def run_executable() -> str:
     path = _get_path()
     if isinstance(path, str):
         return path
-    from maple_mcp.maple_reload import eval_new_in_maple
+    from maple_mcp.maple_reload import eval_new_in_maple, save_in_maple
     resp = eval_new_in_maple()
     if resp is None:
         return ("Could not reach Maple's agent. Is Maple open, and was it "
                 "restarted after the agent was updated?")
     if resp.startswith("error"):
         return f"Execution failed: {resp}"
-    return f"Done — executed unevaluated groups ({resp})."
+    # The agent saves as soon as the kernel is handed the groups; the LAST
+    # results can land after that save (seen: 3 of 11 vector blocks missing on
+    # disk, present after a second save). Save again until nothing is unrun.
+    import time
+    pending = _unrun_blocks(path)
+    for _ in range(8):
+        if not pending:
+            break
+        time.sleep(1.5)
+        save_in_maple()
+        pending = _unrun_blocks(path)
+    note = ""
+    if pending:
+        note = (f" {len(pending)} block(s) still show no output on disk — they may "
+                f"have errored, or take long; call list_unrun / read_document again.")
+    return f"Done — executed unevaluated groups ({resp}).{note}"
+
+
+def _unrun_blocks(path) -> list[str]:
+    unrun = []
+    for e in document.read_document(str(path)):
+        content = e.get("content", "")
+        if isinstance(content, list):
+            content = "; ".join(content)
+        is_exec = e.get("type") == "code" or "{!" in content or "{=" in content
+        if is_exec and not e.get("output"):
+            snippet = content if len(content) <= 80 else content[:80] + "…"
+            unrun.append(f"[{e.get('block')}] {snippet}")
+    return unrun
 
 
 @mcp.tool()
@@ -548,15 +591,7 @@ def list_unrun() -> str:
     path = _get_path()
     if isinstance(path, str):
         return path
-    unrun = []
-    for e in document.read_document(str(path)):
-        content = e.get("content", "")
-        if isinstance(content, list):
-            content = "; ".join(content)
-        is_exec = e.get("type") == "code" or "{!" in content or "{=" in content
-        if is_exec and not e.get("output"):
-            snippet = content if len(content) <= 80 else content[:80] + "…"
-            unrun.append(f"[{e.get('block')}] {snippet}")
+    unrun = _unrun_blocks(path)
     if not unrun:
         return "No unrun executable blocks — every {!…!}/{=…=} block already has output."
     return ("Unrun executable blocks (call run_executable to compute them):\n"

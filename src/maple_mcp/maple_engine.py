@@ -305,6 +305,7 @@ class MapleEngine:
             return self._encode_operation(_opm.group(1).strip(), _opm.group(2).strip())
 
         expr = self._preprocess_notation(expr)
+        expr = self._space_vector_closers(expr)
 
         # Chained / leading relations (a=b=c, 0<=x<=1, "=4*a*b"): split at
         # top-level relational operators and join the typeset operands. This
@@ -328,6 +329,7 @@ class MapleEngine:
                 f'rhs_ts := subsindets(rhs_ts, specfunc(Typesetting:-mcomplete), proc(x) op(1,x) end proc):\n'
                 f'rhs_ts := subsindets(rhs_ts, specfunc(Typesetting:-_Hold), proc(x) NULL end proc):\n'
                 f'ts := Typesetting:-mrow(lhs_ts, Typesetting:-mo("&coloneq;"), rhs_ts):\n'
+                f'{self._notation_fixup("ts")}'
                 f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
                 f' style=TwoDimInput, executable=true)));\n'
             )
@@ -420,6 +422,7 @@ class MapleEngine:
                 f'new_ops := [op(new_ops), Typesetting:-mo("&InvisibleTimes;")] '
                 f'else new_ops := [op(new_ops), ops[i]] end if end do; '
                 f'Typesetting:-mrow(op(new_ops)) end proc):\n'
+                f'{self._notation_fixup("ts")}'
                 f'{_greek_subs_code()}'
                 f'printf("%s", op(-1, DocumentTools:-Layout:-Equation(ts,'
                 f' style=TwoDimInput, executable=false)));\n'
@@ -620,7 +623,97 @@ class MapleEngine:
             f'{var} := subsindets({var}, specfunc(Typesetting:-mi), proc(x) '
             f'if op(1,x) = "QQMARKQQ" then Typesetting:-mo("?", mathvariant = "normal") '
             f'else x end if end proc):\n'
+            + MapleEngine._vector_fixup(var)
         )
+
+    # Rewrites InertForm's typesetting of vectors/matrices into the SAME markup
+    # Maple's palette writes into a 2D-input block (taken from real, executed
+    # assignments): an mtable inside an mfenced tagged msemantics=ColVector /
+    # RowVector / Matrix, wrapped in maction(actiontype=rtableaddress). That is
+    # what makes the GUI parse it back as a Vector/Matrix when executed, and
+    # what renders a column instead of InertForm's inline <1,2>. vec(a) becomes
+    # the arrow accent Maple's Accents palette writes (mover + &RightArrow;),
+    # which Maple treats as the atomic name `#mover(mi("a"),mo("&rarr;"))`.
+    _VECTOR_FIXUP = '''
+VAR := subsindets(VAR, specfunc(Typesetting:-mfenced), proc(x) local ops, els, sem, j, groups, g;
+  ops := [op(x)]; sem := "";
+  for j in ops do
+    if type(j, `=`) and StringTools:-Search("msemantics", convert(lhs(j), string)) > 0 then sem := rhs(j) end if
+  end do;
+  els := remove(type, ops, `=`);
+  if sem = "<,>" then
+    Typesetting:-maction(Typesetting:-mfenced(Typesetting:-mrow(Typesetting:-mtable(
+      seq(Typesetting:-mtr(Typesetting:-mtd(Typesetting:-mrow(g))), g in els))),
+      Typesetting:-msemantics = "ColVector", open = "[", close = "]"), actiontype = "rtableaddress")
+  elif sem = "<|>" then
+    groups := [[]];
+    for j in `if`(nops(els) = 1 and type(els[1], specfunc(Typesetting:-mrow)), [op(els[1])], els) do
+      if type(j, `=`) then next
+      elif type(j, specfunc(Typesetting:-mo)) and op(1, j) = "&verbar;" then groups := [op(groups), []]
+      else groups := [op(groups[1 .. -2]), [op(groups[-1]), j]] end if
+    end do;
+    Typesetting:-maction(Typesetting:-mfenced(Typesetting:-mrow(Typesetting:-mtable(
+      Typesetting:-mtr(seq(Typesetting:-mtd(Typesetting:-mrow(op(g))), g in groups)))),
+      Typesetting:-msemantics = "RowVector", open = "[", close = "]"), actiontype = "rtableaddress")
+  else x end if end proc):
+VAR := subsindets(VAR, specfunc(Typesetting:-mrow), proc(x) local ops, out, i, arg, rows, r, g, ok, hasopen;
+  hasopen := proc(f) local j;
+    for j in [op(f)] do
+      if type(j, `=`) and convert(lhs(j), string) = "open" and rhs(j) = "&lsqb;" then return true end if
+    end do; false end proc;
+  ops := [op(x)]; out := []; i := 1;
+  while i <= nops(ops) do
+    if i + 2 <= nops(ops) and type(ops[i], specfunc(Typesetting:-mi))
+       and type(ops[i+1], specfunc(Typesetting:-mo)) and op(1, ops[i+1]) = "&ApplyFunction;"
+       and type(ops[i+2], specfunc(Typesetting:-mfenced)) and op(1, ops[i]) = "vec" then
+      out := [op(out), Typesetting:-mover(Typesetting:-mrow(op(remove(type, [op(ops[i+2])], `=`))),
+        Typesetting:-mo("&RightArrow;"), accent = "true")];
+      i := i + 3
+    elif i + 2 <= nops(ops) and type(ops[i], specfunc(Typesetting:-mi))
+       and type(ops[i+1], specfunc(Typesetting:-mo)) and op(1, ops[i+1]) = "&ApplyFunction;"
+       and type(ops[i+2], specfunc(Typesetting:-mfenced)) and op(1, ops[i]) = "Matrix"
+       and nops(remove(type, [op(ops[i+2])], `=`)) = 1 then
+      arg := remove(type, [op(ops[i+2])], `=`)[1];
+      ok := type(arg, specfunc(Typesetting:-mfenced)) and hasopen(arg);
+      rows := `if`(ok, remove(type, [op(arg)], `=`), []);
+      ok := ok and nops(rows) > 0
+         and andmap(r -> type(r, specfunc(Typesetting:-mfenced)) and hasopen(r), rows);
+      if ok then
+        out := [op(out), Typesetting:-maction(Typesetting:-mfenced(Typesetting:-mrow(Typesetting:-mtable(
+          seq(Typesetting:-mtr(seq(Typesetting:-mtd(Typesetting:-mrow(g)), g in remove(type, [op(r)], `=`))), r in rows))),
+          Typesetting:-msemantics = "Matrix", open = "[", close = "]"), actiontype = "rtableaddress")];
+        i := i + 3
+      else out := [op(out), ops[i]]; i := i + 1 end if
+    else out := [op(out), ops[i]]; i := i + 1 end if
+  end do;
+  Typesetting:-mrow(op(out)) end proc):
+'''
+
+    @staticmethod
+    def _vector_fixup(var: str) -> str:
+        """Maple snippet turning InertForm's <,> / <|> / Matrix([[..]]) / vec(x)
+        typesetting into the palette's mtable + accent markup (see _VECTOR_FIXUP)."""
+        return MapleEngine._VECTOR_FIXUP.replace('VAR', var).strip('\n') + '\n'
+
+    @staticmethod
+    def _space_vector_closers(expr: str) -> str:
+        """'<0,0>=a' lexes as '<0,0 >= a' in Maple. Put a space after a '>' that
+        closes a vector literal when '=' follows (read_document emits exactly
+        that spacing, so decoded text must re-encode)."""
+        out, vec_depth = [], 0
+        for i, c in enumerate(expr):
+            if c == '<' and expr[i:i + 2] not in ('<=', '<>'):
+                s = ''.join(out).rstrip()
+                if not s or s[-1] in '(,[{=+-*/^|<:.' or re.search(r'&[A-Za-z]+$', s):
+                    vec_depth += 1
+            elif c == '>' and vec_depth > 0:
+                vec_depth -= 1
+                out.append(c)
+                if expr[i + 1:i + 2] == '=':
+                    out.append(' ')
+                continue
+            out.append(c)
+        return ''.join(out)
 
     @staticmethod
     def _split_relations(expr: str):
@@ -632,15 +725,31 @@ class MapleEngine:
         """
         ops = [(':=', '&coloneq;'), ('<=', '&le;'), ('>=', '&ge;'),
                ('<>', '&ne;'), ('=', '='), ('<', '&lt;'), ('>', '&gt;')]
+        import re
         operands, operator_ents = [], []
         cur, depth, i, n = '', 0, 0, len(expr)
+        vec_depth = 0
+
+        def _opens_vector(before: str) -> bool:
+            # '<' starts a vector literal (<1,2>, <a|b>, 2*<1,2>) when it sits
+            # where an operand must begin; after an operand (x<2, f(x)<2) it
+            # is a relation.
+            s = before.rstrip()
+            return (not s or s[-1] in '(,[{=+-*/^|<:.'
+                    or re.search(r'&[A-Za-z]+$', s) is not None)
+
         while i < n:
             c = expr[i]
             if c in '([{':
                 depth += 1; cur += c; i += 1; continue
             if c in ')]}':
                 depth -= 1; cur += c; i += 1; continue
-            if depth == 0:
+            if (c == '<' and expr[i:i + 2] not in ('<=', '<>')
+                    and _opens_vector(cur)):
+                vec_depth += 1; cur += c; i += 1; continue
+            if c == '>' and vec_depth > 0:
+                vec_depth -= 1; cur += c; i += 1; continue
+            if depth == 0 and vec_depth == 0:
                 matched = next(((t, e) for t, e in ops if expr[i:i + len(t)] == t), None)
                 if matched:
                     tok, ent = matched
@@ -869,10 +978,22 @@ class MapleEngine:
         self._ensure_kernel()
         self.execute('''
 TS2Str := proc(e)
-    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop, isunit, mu, bnd, body, fname, opn, apos;
+    local i, s, o, t, ops, j, lo, hi, dpos, integ, var, intop, isunit, mu, bnd, body, fname, opn, apos,
+          sem, tbl, rows, cells, r, c, base, tname;
+    # Local name of a typesetting node: mscrolltable/mscrolltr/mscrolltd (output
+    # blobs) are not Typesetting exports, so specfunc cannot name them.
+    tname := proc(f) local n, k;
+        if not type(f, function) then return "" end if;
+        n := sprintf("%a", f); k := StringTools:-Search("(", n);
+        if k > 0 then n := n[1 .. k - 1] end if;
+        k := StringTools:-Search(":-", n);
+        if k > 0 then n[k + 2 .. -1] else n end if
+    end proc;
     if type(e, string) then
         if member(e, {"true","false","bold","italic","normal","none","bold-italic"}) then return "" end if;
         if e = "&infin;" then return "infinity" end if;
+        if e = "&amp;x" then return " &x " end if;
+        if e = "&middot;" then return " . " end if;
         return e
     end if;
     if not type(e, function) then return "" end if;
@@ -956,7 +1077,8 @@ TS2Str := proc(e)
         # &rarr; bound (an mo, not a child mover) is not mistaken for an arrow.
         apos := 0;
         for j from 1 to nops(e) do
-            if type(op(j,e), specfunc(Typesetting:-mover)) and has(op(j,e), "&rarr;") then apos := j; break end if
+            if type(op(j,e), specfunc(Typesetting:-mover)) and has(op(j,e), "&rarr;")
+               and type(op(1, op(j,e)), specfunc(Typesetting:-mo)) then apos := j; break end if
         end do;
         if apos > 0 then
             body := "";
@@ -974,15 +1096,57 @@ TS2Str := proc(e)
     elif type(e, specfunc(Typesetting:-msup)) then
         s := cat(procname(op(1,e)), "^", procname(op(2,e)))
     elif type(e, specfunc(Typesetting:-msub)) then
-        s := cat(procname(op(1,e)), "_", procname(op(2,e)))
+        base := procname(op(1,e));
+        # vec(r)_G is not re-parseable; index a call with brackets instead
+        if StringTools:-IsSuffix(")", base) then s := cat(base, "[", procname(op(2,e)), "]")
+        else s := cat(base, "_", procname(op(2,e))) end if
     elif type(e, specfunc(Typesetting:-mfenced)) then
-        isunit := false; opn := "";
+        isunit := false; opn := ""; sem := "";
         for j from 1 to nops(e) do
             if type(op(j,e), `=`) then
                 if rhs(op(j,e)) = "Unit" then isunit := true end if;
-                if convert(lhs(op(j,e)), string) = "open" then opn := rhs(op(j,e)) end if
+                if convert(lhs(op(j,e)), string) = "open" then opn := rhs(op(j,e)) end if;
+                if StringTools:-Search("msemantics", convert(lhs(op(j,e)), string)) > 0 then sem := rhs(op(j,e)) end if
             end if
         end do;
+        # Vectors/matrices: the palette's mtable (input) or mscrolltable (output)
+        # inside brackets. Piecewise also uses an mtable but is tagged as such.
+        # Only a table that is the DIRECT content of these fences (possibly via
+        # one mrow) — a vector nested deeper, e.g. inside f(<1,2>)'s call parens,
+        # must not swallow the parens and the other arguments.
+        tbl := 0;
+        for j from 1 to nops(e) do
+            o := op(j,e);
+            if type(o, `=`) then next end if;
+            if member(tname(o), {"mtable", "mscrolltable"}) then tbl := o
+            elif tname(o) = "mrow" then
+                for c in [op(o)] do
+                    if member(tname(c), {"mtable", "mscrolltable"}) then tbl := c end if
+                end do
+            end if
+        end do;
+        if tbl <> 0 and (member(sem, {"ColVector", "RowVector", "Matrix"})
+           or (sem = "" and member(opn, {"[", "&lsqb;", "(", ""}))) then
+            rows := [];
+            for r in [op(tbl)] do
+                if member(tname(r), {"mtr", "mscrolltr"}) then
+                    cells := [];
+                    for c in [op(r)] do
+                        if member(tname(c), {"mtd", "mscrolltd"}) then cells := [op(cells), procname(c)] end if
+                    end do;
+                    rows := [op(rows), cells]
+                end if
+            end do;
+            if nops(rows) = 0 then s := ""
+            elif sem = "RowVector" or (sem <> "Matrix" and sem <> "ColVector" and nops(rows) = 1 and nops(rows[1]) > 1) then
+                s := cat("<", StringTools:-Join(rows[1], "|"), ">")
+            elif sem = "ColVector" or (sem <> "Matrix" and andmap(r -> nops(r) = 1, rows)) then
+                s := cat("<", StringTools:-Join(map(r -> r[1], rows), ","), ">")
+            else
+                s := cat("Matrix([", StringTools:-Join(map(r -> cat("[", StringTools:-Join(r, ","), "]"), rows), ","), "])")
+            end if;
+            return s
+        end if;
         ops := [];
         for j from 1 to nops(e) do
             if type(op(j,e), `=`) then next end if;
@@ -990,8 +1154,14 @@ TS2Str := proc(e)
         end do;
         if isunit then
             s := cat("[[", cat(op(ops)), "]]")
-        elif opn = "&verbar;" then
+        elif opn = "&lang;" then
+            # InertForm's own inline vector form <a,b> / <a|b>
+            if sem = "<|>" then s := cat("<", cat(op(ops)), ">")
+            else s := cat("<", StringTools:-Join(ops, ","), ">") end if
+        elif opn = "&verbar;" or opn = "|" or opn = "&mid;" then
             s := cat("abs(", StringTools:-Join(ops, ", "), ")")
+        elif opn = "[" or opn = "&lsqb;" then
+            s := cat("[", StringTools:-Join(ops, ", "), "]")
         elif opn = "&lfloor;" then
             s := cat("floor(", StringTools:-Join(ops, ", "), ")")
         elif opn = "&lceil;" then
@@ -1003,6 +1173,11 @@ TS2Str := proc(e)
         end if
     elif type(e, specfunc(Typesetting:-msqrt)) then
         s := cat("sqrt(", procname(op(1,e)), ")")
+    elif type(e, specfunc(Typesetting:-mover)) and nops(e) >= 2
+         and not type(op(1,e), specfunc(Typesetting:-mo))
+         and (has(op(2,e), "&RightArrow;") or has(op(2,e), "&rarr;")) then
+        # Arrow accent over a name (the Accents palette): vec(a)
+        s := cat("vec(", procname(op(1,e)), ")")
     elif type(e, specfunc(Typesetting:-mover)) and has(e, "&rarr;") then
         s := cat(" --", procname(op(2,e)), "--> ")
     else
@@ -1037,6 +1212,8 @@ end proc:
         result = self.execute(
             f'printf("%s", TS2Str(op(sscanf(FileTools:-Text:-ReadFile("{tmp_fwd}"), "%m"))))'
         )
+        # The kernel's GC status can interleave into printf output mid-line.
+        result = self._strip_gc_status(result)
         import re as _re_fail
         if "Error" in result or _re_fail.search(r'Typesetting:-\w+\(', result):
             # TS2Str could not fully decode this structure (a partial node leaked,

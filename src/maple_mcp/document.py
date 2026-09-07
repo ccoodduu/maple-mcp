@@ -63,8 +63,11 @@ def _replace_units_in_expr(expr: str) -> str:
     # InertForm:-Parse's implicit multiplication is unreliable inside fractions
     # and after closing parens — "(-13.6[[eV]])/(n^2)" fails, but
     # "(-13.6*[[eV]])/(n^2)" parses cleanly once the unit is substituted out.
-    expr = re.sub(r'([\w\)])\s*\[\[', r'\1*[[', expr)
-    return re.sub(r'\[\[(.+?)\]\]', _replace, expr)
+    # A unit never holds a comma or a bracket, so a nested list such as
+    # Matrix([[1,2],[3,4]]) is left alone.
+    unit_re = r'\[\[([^\[\],]+?)\]\]'
+    expr = re.sub(r'([\w\)])\s*(?=' + unit_re + ')', r'\1*', expr)
+    return re.sub(unit_re, _replace, expr)
 
 
 def _latex_to_maple(expr: str) -> str:
@@ -491,14 +494,25 @@ def _append_blocks(file_path: str, blocks, backup_path: str | None = None) -> st
 
 
 def _decode_equation_text(eq_el: ET.Element) -> str:
-    b64 = eq_el.text
-    if not b64:
+    # An OUTPUT equation's text is the kernel VALUE (e.g. an rtable reference),
+    # which the Typesetting decoder cannot read — it came out as "[]" for 89% of
+    # the outputs in real assignments. The `display` attribute holds the typeset
+    # form Maple rendered, so read that first for outputs.
+    candidates = []
+    if "Output" in (eq_el.get("style") or "") and eq_el.get("display"):
+        candidates.append(eq_el.get("display"))
+    if eq_el.text:
+        candidates.append(eq_el.text)
+    if not candidates:
         return "[CORRUPT EQUATION]"
-    try:
-        result = engine.decode_equation(b64.strip())
-        return result if result else "[CORRUPT EQUATION]"
-    except Exception:
-        return "[CORRUPT EQUATION]"
+    for b64 in candidates:
+        try:
+            result = engine.decode_equation(b64.strip())
+        except Exception:
+            continue
+        if result and result != "[]":
+            return result
+    return "[CORRUPT EQUATION]"
 
 
 def _decode_entities(text: str) -> str:
