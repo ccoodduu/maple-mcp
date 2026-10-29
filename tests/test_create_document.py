@@ -75,6 +75,28 @@ class TestGeneratedDocument:
         assert root.findall("Group") == []
         assert root.findall(".//Equation") == []
 
+    def test_is_document_mode(self, engine, tmp_path):
+        """Without these flags Maple opens the file as a worksheet, and every
+        region it creates later is a '>' prompt."""
+        from maple_mcp.document import create_document
+        target = tmp_path / "docmode.mw"
+        create_document(str(target))
+
+        root = ET.parse(target).getroot()
+        assert root.find("View-Properties").get("presentation") == "true"
+        assert root.find("MapleNet-Properties").get("format") == "document"
+        text = target.read_text(encoding="utf-8")
+        assert "worksheet'" not in text and 'worksheet"' not in text
+        assert "presentation='false'" not in text and 'presentation="false"' not in text
+
+    def test_written_document_raises_no_mode_warning(self, engine, tmp_path):
+        from maple_mcp.document import (create_document, insert_content,
+                                        worksheet_mode_warning)
+        target = tmp_path / "nowarn.mw"
+        create_document(str(target))
+        insert_content(str(target), [{"type": "text", "content": "Hej"}])
+        assert worksheet_mode_warning(str(target)) is None
+
     def test_declares_utf8(self, engine, tmp_path):
         from maple_mcp.document import create_document
         target = tmp_path / "enc.mw"
@@ -121,3 +143,87 @@ class TestGeneratedDocument:
 
         insert_content(str(target), [{"type": "text", "content": "Hello from the test"}])
         assert "Hello from the test" in target.read_text(encoding="utf-8")
+
+
+DOC_BLOCK = (
+    '<Presentation-Block><Group view="presentation" labelreference="L1">'
+    '<Input><Text-field style="Text" layout="Normal">Hej</Text-field></Input>'
+    '</Group></Presentation-Block>'
+)
+EMPTY_PROMPT = (
+    '<Group labelreference="L2" drawlabel="true"><Input>'
+    '<Text-field prompt="&gt; " style="Maple Input" layout="Normal">'
+    '<Equation executable="true" style="2D Input" input-equation="" display="QQ==">QQ==</Equation>'
+    '</Text-field></Input></Group>'
+)
+RUN_PROMPT = (
+    '<Group labelreference="L3"><Input>'
+    '<Text-field prompt="&gt; " style="Maple Input" layout="Normal">'
+    '<Equation executable="true" style="2D Input" input-equation="x := 1" display="QQ==">QQ==</Equation>'
+    '</Text-field></Input>'
+    '<Output><Text-field style="2D Output" layout="Normal"/></Output></Group>'
+)
+
+
+def _mw(tmp_path, header: str, body: str):
+    target = tmp_path / "mode.mw"
+    target.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        f'<Worksheet><Version major="2026" minor="1"/>{header}{body}</Worksheet>',
+        encoding="utf-8")
+    return str(target)
+
+
+class TestWorksheetModeWarning:
+    """The file's mode decides what kind of region Maple creates next."""
+
+    DOC = ('<View-Properties presentation="true"/>'
+           '<MapleNet-Properties format="document"/>')
+    SHEET = ('<View-Properties presentation="false"/>'
+             '<MapleNet-Properties format="worksheet"/>')
+
+    def test_document_mode_is_silent(self, tmp_path):
+        from maple_mcp.document import worksheet_mode_warning
+        assert worksheet_mode_warning(_mw(tmp_path, self.DOC, DOC_BLOCK)) is None
+
+    def test_single_quoted_header_is_read(self, tmp_path):
+        """XMLTools:-PrintToString quotes with ', so a file create_document
+        wrote and Maple has not yet re-saved looks like this."""
+        from maple_mcp.document import worksheet_mode_warning
+        header = ("<View-Properties presentation='true'/>"
+                  "<MapleNet-Properties format='document'/>")
+        assert worksheet_mode_warning(_mw(tmp_path, header, DOC_BLOCK)) is None
+
+    def test_pure_worksheet_is_silent(self, tmp_path):
+        """A real worksheet is not a mistake to warn about."""
+        from maple_mcp.document import worksheet_mode_warning
+        assert worksheet_mode_warning(_mw(tmp_path, self.SHEET, RUN_PROMPT)) is None
+
+    def test_document_blocks_in_worksheet_warn(self, tmp_path):
+        from maple_mcp.document import worksheet_mode_warning
+        body = DOC_BLOCK + f'<Section><Title/>{DOC_BLOCK}{EMPTY_PROMPT}</Section>' + RUN_PROMPT
+        warning = worksheet_mode_warning(_mw(tmp_path, self.SHEET, body))
+        assert warning is not None
+        assert 'presentation="false"' in warning and 'format="worksheet"' in warning
+        assert "2 execution group(s)" in warning
+        assert "1 of them empty prompts" in warning
+
+    def test_format_worksheet_alone_warns(self, tmp_path):
+        from maple_mcp.document import worksheet_mode_warning
+        header = ('<View-Properties presentation="true"/>'
+                  '<MapleNet-Properties format="worksheet"/>')
+        assert worksheet_mode_warning(_mw(tmp_path, header, DOC_BLOCK)) is not None
+
+    def test_missing_header_warns(self, tmp_path):
+        """What create_document wrote before it set the header: Maple opened
+        these as worksheets."""
+        from maple_mcp.document import worksheet_mode_warning
+        warning = worksheet_mode_warning(_mw(tmp_path, "", DOC_BLOCK))
+        assert warning is not None and "no View-Properties" in warning
+
+    def test_warning_does_not_touch_the_file(self, tmp_path):
+        from maple_mcp.document import worksheet_mode_warning
+        path = _mw(tmp_path, self.SHEET, DOC_BLOCK + EMPTY_PROMPT)
+        before = Path(path).read_bytes()
+        worksheet_mode_warning(path)
+        assert Path(path).read_bytes() == before

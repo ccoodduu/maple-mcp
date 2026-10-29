@@ -41,6 +41,20 @@ open (the same trap that keeps table authoring deferred). `tests/test_create_doc
 proves the output is openable by round-tripping it through the PDF export loader,
 which is the same parse path as File ▸ Open.
 
+The Document-mode header is passed explicitly: `ViewProperties(presentation=true)`
+plus a bare `MapleNet-Properties format="document"` (Maple's `MapleNetProperties()`
+has no `format` option). `Worksheet()` alone writes no View-Properties, and Maple
+then opens the file as a worksheet: every region it creates later — a new
+section, Enter at the end of one — is a `>` execution group, although all our
+content is document blocks. Verified on 2026.1 by open + save through the agent:
+without the header Maple saved `presentation="false"`/`format="worksheet"` and a
+`>` prompt; with it, `presentation="true"`/`format="document"` and a
+Presentation-Block. The header must be on disk before Maple first opens the
+file — Maple keeps the mode in memory and rewrites the header on save.
+`worksheet_mode_warning` (shown by `read_document` and `set_document_path`) flags
+files that hold document blocks under a worksheet header; it found exactly the
+4 files the old `create_document` made among 90 real assignments.
+
 ### Content matching, not position-based
 All edit operations use content matching (like Edit tool's old_string). Match text corresponds exactly to what read_document outputs. For sections, include `#` prefix (e.g. `"## b)"`).
 

@@ -1,4 +1,5 @@
 import base64
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -329,7 +330,7 @@ def set_document_path(file_path: str | None = None) -> str:
         detected = get_open_document_path()
         if detected:
             _document_path = Path(detected)
-            return f"Auto-detected document: {detected}"
+            return _with_mode_warning(f"Auto-detected document: {detected}", detected)
         return "Could not detect open document. Provide the file path manually."
 
     path = Path(file_path)
@@ -338,7 +339,15 @@ def set_document_path(file_path: str | None = None) -> str:
     if path.suffix.lower() != ".mw":
         return f"Not a .mw file: {file_path}"
     _document_path = path
-    return f"Document set to: {path}"
+    return _with_mode_warning(f"Document set to: {path}", path)
+
+
+def _with_mode_warning(message: str, path) -> str:
+    try:
+        warning = document.worksheet_mode_warning(str(path))
+    except (OSError, ET.ParseError):
+        return message
+    return f"{message}\n\n{warning}" if warning else message
 
 
 @mcp.tool()
@@ -378,7 +387,11 @@ def read_document(start: int = 0, end: int | None = None) -> list[TextContent | 
     if not entries:
         return "Document is empty."
 
-    return _format_entries(entries)
+    result = _format_entries(entries)
+    warning = document.worksheet_mode_warning(str(path))
+    if warning:
+        result.insert(0, TextContent(type="text", text=warning))
+    return result
 
 
 @mcp.tool()

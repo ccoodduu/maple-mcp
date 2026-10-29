@@ -1318,6 +1318,16 @@ def _empty_worksheet_xml() -> str:
     what keeps it version-correct: Maple fills in `minor` and every default
     attribute itself, and a new Maple release changes the output here rather
     than silently producing a file it refuses to open.
+
+    The Document-mode header is explicit. Without a View-Properties element
+    Maple opens the file as a worksheet, and every region it creates later — a
+    new section, Enter at the end of one — is a `>` execution group, although
+    all the content we write is document blocks. It has to be in the file
+    before Maple first opens it: Maple keeps the mode in memory and writes its
+    own header on save. Maple's MapleNetProperties() has no `format` option,
+    so that attribute is added as a bare element. Maple derives the same value
+    from `presentation` on save, so this only keeps the file self-describing
+    on disk until then.
     """
     from maple_mcp.maple_engine import maple_version
 
@@ -1330,7 +1340,9 @@ def _empty_worksheet_xml() -> str:
 
     code = (
         f"ws := DocumentTools:-Layout:-Worksheet("
-        f"DocumentTools:-Layout:-Version(major={major})):\n"
+        f"DocumentTools:-Layout:-Version(major={major}), "
+        f"DocumentTools:-Layout:-ViewProperties(presentation=true), "
+        f'XMLTools:-Element("MapleNet-Properties", ["format"="document"])):\n'
         f'printf("%s", XMLTools:-PrintToString(ws));'
     )
     body = engine.execute(code)
@@ -1358,9 +1370,77 @@ def create_document(file_path: str) -> str:
 
     xml = _empty_worksheet_xml()
     try:
-        ET.fromstring(xml.encode())
+        root = ET.fromstring(xml.encode())
     except ET.ParseError as e:
         raise ValueError(f"Generated worksheet is not valid XML: {e}") from e
+    view = root.find("View-Properties")
+    if view is None or view.get("presentation") != "true":
+        raise ValueError(
+            "Maple did not mark the new document as Document mode — it would "
+            "open as a worksheet and grow '>' prompts"
+        )
 
     path.write_text(xml, encoding="utf-8")
     return str(path)
+
+
+def _header_attr(content: str, element: str, attr: str) -> str | None:
+    tag = re.search(rf"<{element}\b[^>]*>", content)
+    if not tag:
+        return None
+    m = re.search(rf"""\b{attr}=["']([^"']*)["']""", tag.group(0))
+    return m.group(1) if m else None
+
+
+def _is_empty_prompt(group: ET.Element) -> bool:
+    # An Equation's element text is its base64 encoding, never empty, so
+    # emptiness is read from input-equation and the Text-field's own text.
+    if group.find("Output") is not None:
+        return False
+    for tf in group.iter("Text-field"):
+        if (tf.text or "").strip():
+            return False
+        if any(c.tag != "Equation" or (c.tail or "").strip() for c in tf):
+            return False
+    return all(eq.get("input-equation", "") == "" for eq in group.iter("Equation"))
+
+
+def worksheet_mode_warning(file_path: str) -> str | None:
+    """Warn when a document made of document blocks is flagged as a worksheet.
+
+    Maple creates every new region in the mode the header names, so such a file
+    grows `>` prompts as soon as the user adds a section or presses Enter at the
+    end of one. A missing View-Properties counts as worksheet: that is how Maple
+    opened the files create_document wrote before it set the header. Pure
+    worksheets (no document blocks) are left alone.
+    """
+    content = Path(file_path).read_text(encoding="utf-8")
+    if "<Presentation-Block" not in content:
+        return None
+    presentation = _header_attr(content, "View-Properties", "presentation")
+    fmt = _header_attr(content, "MapleNet-Properties", "format")
+    if presentation == "true" and fmt != "worksheet":
+        return None
+
+    root = ET.fromstring(content.encode("utf-8"))
+    stray = [g for parent in root.iter() if parent.tag in ("Worksheet", "Section")
+             for g in parent.findall("Group") if g.get("view") != "presentation"]
+    empty = [g for g in stray if _is_empty_prompt(g)]
+
+    flags = f'presentation="{presentation}"' if presentation else "no View-Properties"
+    if fmt:
+        flags += f', format="{fmt}"'
+    msg = (
+        f"WARNING: this document holds document blocks but its header marks it "
+        f"as Worksheet mode ({flags}). Maple creates new regions in the header's "
+        f"mode, so a new section or Enter at the end of one gives a '>' prompt."
+    )
+    if stray:
+        msg += (f" {len(stray)} execution group(s) sit outside document blocks"
+                f" ({len(empty)} of them empty prompts).")
+    msg += (
+        ' To fix: close the document in Maple, set presentation="true" on '
+        '<View-Properties> and format="document" on <MapleNet-Properties>, '
+        "then reopen it."
+    )
+    return msg
