@@ -512,7 +512,42 @@ def _decode_equation_text(eq_el: ET.Element) -> str:
             continue
         if result and result != "[]":
             return result
+    if any(_is_blank_math(b64) for b64 in candidates):
+        return ""
     return "[CORRUPT EQUATION]"
+
+
+_BLANK_MATH_TAGS = {"mrow", "mo", "mi", "mspace", "modulename"}
+
+
+def _is_blank_math(b64: str) -> bool:
+    """True for an equation that shows nothing: an mrow of blank mo/mi.
+
+    Maple creates one as the cursor's region when it opens a new document, and
+    wherever Enter leaves an empty math line. It decodes to "[]" just like a
+    structure TS2Str cannot read, so without this check it read back as an
+    unreadable equation. input-equation="" says nothing here — it is empty on
+    almost every equation Maple writes — so the Typesetting tree itself is
+    inspected. The tag-name scan of the .m bytes skips the kernel call for
+    anything with real structure (mn, mfrac, msub, ...).
+    """
+    import base64
+    b64 = "".join(b64.split())
+    try:
+        m = base64.b64decode(b64).decode("latin-1")
+    except ValueError:
+        return False
+    if not set(re.findall(r"I.(m[a-z]+)G", m)) <= _BLANK_MATH_TAGS:
+        return False
+    result = engine.execute(
+        'T := sscanf(StringTools:-Decode("' + b64 + '", base64), "%m")[1]:\n'
+        'printf("%a", andmap(e -> member(op(0, e), '
+        '{Typesetting:-mrow, Typesetting:-mspace}) or '
+        '(member(op(0, e), {Typesetting:-mo, Typesetting:-mi}) and '
+        'member(StringTools:-Trim(op(1, e)), {"", "&nbsp;", "&#160;"})), '
+        'indets(T, function)));'
+    )
+    return "true" in result and "Error" not in result
 
 
 def _decode_entities(text: str) -> str:
@@ -536,7 +571,9 @@ def _extract_text(el: ET.Element) -> str:
                 exe = child.get("executable", "false") == "true"
                 decoded = _decode_equation_text(child)
                 eq_bg = getattr(engine, '_last_eq_background', None)
-                if decoded and decoded != "[CORRUPT EQUATION]":
+                if decoded == "":
+                    pass
+                elif decoded != "[CORRUPT EQUATION]":
                     if exe:
                         eq_markup = f"{{!{decoded}!}}"
                     else:
